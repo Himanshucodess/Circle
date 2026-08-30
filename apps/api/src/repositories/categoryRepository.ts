@@ -31,14 +31,14 @@ export async function listAll() {
 
 export async function listActive() {
   return prisma.category.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: "ACTIVE", schemas: { some: { status: "PUBLISHED" } } },
     orderBy: { name: "asc" },
   });
 }
 
 export async function create(data: CreateCategoryInput) {
   try {
-    return await prisma.category.create({ data });
+    return await prisma.category.create({ data: { ...data, status: "DRAFT" } });
   } catch (e: any) {
     if (e?.code === "P2002") {
       throw ApiError.conflict("DUPLICATE_SLUG", "A category with this slug already exists");
@@ -62,10 +62,18 @@ export async function archive(id: string) {
   return prisma.category.update({ where: { id }, data: { status: "ARCHIVED" } });
 }
 
+export async function activate(id: string) {
+  return prisma.category.update({ where: { id }, data: { status: "ACTIVE" } });
+}
+
 export async function countAll() {
   return prisma.category.count();
 }
 
 export async function countActive() {
   return prisma.category.count({ where: { status: "ACTIVE" } });
+}
+
+export async function countPublishedSchemas() {
+  return prisma.schemaVersion.count({ where: { status: "PUBLISHED" } });
 }

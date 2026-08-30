@@ -2,8 +2,10 @@ import { Router } from "express";
 import * as c from "../controllers/categoryController";
 import * as cf from "../controllers/categoryFieldController";
 import * as s from "../controllers/schemaController";
+import { requireAdmin } from "../middleware/adminAuth";
 
 const router = Router();
+router.use(requireAdmin);
 
 router.get("/", c.listCategoriesAdmin);
 router.get("/stats", c.dashboardStats);

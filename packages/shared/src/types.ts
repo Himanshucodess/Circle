@@ -118,8 +118,8 @@ export interface ListingDto {
   schemaVersion: number | null;
   images: { id: string; url: string; displayOrder: number }[];
   createdAt: string;
-  offers?: OfferDto[];
   pricingInsight?: PricingInsightDto;
+  seller?: { id: string; name?: string | null; avatar?: string | null; memberSince?: string } | null;
 }
 
 export interface OfferDto {
@@ -133,12 +133,10 @@ export interface OfferDto {
 
 export interface PricingInsightDto {
   listingPrice: number;
-  medianPrice: number | null;
   comparableCount: number;
   differencePercent: number | null;
   rating: "EXCELLENT" | "GOOD" | "COMPETITIVE" | "HIGH" | "TOO_HIGH" | "NO_DATA";
   message: string;
-  range?: { min: number; max: number };
 }
 
 export interface ApiSuccess<T> {

@@ -10,6 +10,8 @@ import adminCategoriesRouter from "./routes/adminCategories";
 import fieldsRouter from "./routes/fields";
 import listingsRouter from "./routes/listings";
 import authRouter from "./routes/auth";
+import adminAuthRouter from "./routes/adminAuth";
+import categoryRequestsRouter from "./routes/categoryRequests";
 
 export function createApp() {
   const app = express();
@@ -65,8 +67,10 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/admin/auth", adminAuthRouter);
   app.use("/api/categories", publicCategoriesRouter);
   app.use("/api/listings", listingsRouter);
+  app.use("/api/category-requests", categoryRequestsRouter);
 
   // Admin
   app.use("/api/admin/categories", adminCategoriesRouter);

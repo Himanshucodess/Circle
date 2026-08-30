@@ -1,7 +1,8 @@
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom"
-import { LayoutDashboard, Layers, Puzzle, Store, ArrowLeft, Sparkles, Search, Bell } from "lucide-react"
+import { LayoutDashboard, Layers, Puzzle, Store, ArrowLeft, Sparkles, Search, Bell, ClipboardList, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { Separator } from "@/components/ui/separator"
+import { adminLogout } from "@/services/adminApi"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { to: "/admin/categories", label: "Categories", icon: Layers },
     { to: "/admin/fields", label: "Fields", icon: Puzzle },
+    { to: "/admin/requests", label: "Requests", icon: ClipboardList },
   ]
 
   const isActive = (to: string, exact?: boolean) => {
@@ -52,10 +54,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden lg:flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              API: localhost:4000
-            </div>
             <Button variant="ghost" size="icon" className="rounded-full hidden sm:inline-flex">
               <Search className="w-4 h-4" />
             </Button>
@@ -66,6 +64,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4" /> View site
             </Button>
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={async () => { await adminLogout(); navigate("/admin/login", { replace: true }); }}><LogOut className="w-4 h-4" /> Logout</Button>
           </div>
         </div>
 

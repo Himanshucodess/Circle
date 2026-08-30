@@ -16,6 +16,7 @@ export const CONDITION_OPERATORS = ["equals", "not_equals", "in", "not_in"] as c
 export type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 
 export const CATEGORY_STATUS = {
+  DRAFT: "DRAFT",
   ACTIVE: "ACTIVE",
   ARCHIVED: "ARCHIVED",
 } as const;
@@ -30,6 +31,6 @@ export const SCHEMA_STATUS = {
 
 export type SchemaStatus = (typeof SCHEMA_STATUS)[keyof typeof SCHEMA_STATUS];
 
-export const LISTING_CONDITIONS = ["NEW", "LIKE_NEW", "USED", "REFURBISHED"] as const;
+export const LISTING_CONDITIONS = ["NEW", "LIKE_NEW", "GOOD", "USED", "FAIR"] as const;
 
 export type ListingCondition = (typeof LISTING_CONDITIONS)[number];

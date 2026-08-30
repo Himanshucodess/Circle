@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom"
 import { Search, ShoppingBag, Store, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth"
+import { useCategories } from "@/hooks/useCategories"
 
 export function Header() {
   const navigate = useNavigate()
   const { user, logout } = useUnifiedAuth()
+  const { categories } = useCategories()
   const [query, setQuery] = useState("")
 
   const onSearch = (e: React.FormEvent) => {
@@ -75,6 +77,8 @@ export function Header() {
           )}
         </div>
       </div>
+
+      <nav className="hidden md:flex border-t bg-background px-4"><div className="max-w-7xl mx-auto w-full flex items-center gap-2 overflow-x-auto py-2 scrollbar-none"><Link to="/" className="shrink-0 rounded-full px-3 py-1 text-xs font-medium hover:bg-accent">All</Link>{categories.map((category) => <Link key={category.id} to={`/?category=${encodeURIComponent(category.slug)}`} className="shrink-0 rounded-full px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">{category.name}</Link>)}</div></nav>
 
       {/* mobile search */}
       <div className="md:hidden border-t bg-background px-4 py-3">

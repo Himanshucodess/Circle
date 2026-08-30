@@ -83,7 +83,7 @@ export function ClerkAuthProvider({ children }: { children: React.ReactNode }) {
     await signOut();
     localStorage.removeItem("clerk_token");
     setToken(null);
-    // also clear legacy demo token if present
+    // Clear any legacy session token as well.
     localStorage.removeItem("token");
   };
 

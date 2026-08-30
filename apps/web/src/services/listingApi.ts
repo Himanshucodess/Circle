@@ -1,8 +1,12 @@
 import { apiFetch } from "@/utils/api";
 import { ListingDto } from "@marketplace/shared";
 
-export async function fetchListings(limit?: number): Promise<ListingDto[]> {
-  const q = limit ? `?limit=${limit}` : "";
+export async function fetchListings(limit?: number, options?: { search?: string; category?: string }): Promise<ListingDto[]> {
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", String(limit));
+  if (options?.search) params.set("search", options.search);
+  if (options?.category) params.set("category", options.category);
+  const q = params.toString() ? `?${params.toString()}` : "";
   return apiFetch<ListingDto[]>(`/api/listings${q}`);
 }
 
@@ -28,4 +32,12 @@ export async function createListing(input: CreateListingInput): Promise<ListingD
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export async function recordListingView(id: string) {
+  return apiFetch<{ viewCount: number }>(`/api/listings/${id}/view`, { method: "POST" });
+}
+
+export async function fetchMyListings() {
+  return apiFetch<ListingDto[]>("/api/listings/mine");
 }

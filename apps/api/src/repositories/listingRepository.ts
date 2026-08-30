@@ -36,6 +36,7 @@ export async function create(data: CreateListingInput) {
       category: true,
       images: { orderBy: { displayOrder: "asc" } },
       schema: { select: { version: true } },
+      seller: { select: { id: true, name: true, avatar: true, createdAt: true } },
     },
   });
 }
@@ -47,6 +48,7 @@ export async function findById(id: string) {
       category: true,
       images: { orderBy: { displayOrder: "asc" } },
       schema: { select: { version: true } },
+      seller: { select: { id: true, name: true, avatar: true, createdAt: true } },
     },
   });
 }
@@ -58,6 +60,7 @@ export async function listRecent(limit = 12, opts?: { search?: string; categoryS
     where.OR = [
       { title: { contains: s, mode: "insensitive" } },
       { description: { contains: s, mode: "insensitive" } },
+      { category: { name: { contains: s, mode: "insensitive" } } },
     ];
   }
   if (opts?.categorySlug) {
@@ -71,7 +74,7 @@ export async function listRecent(limit = 12, opts?: { search?: string; categoryS
       category: true,
       images: { orderBy: { displayOrder: "asc" } },
       schema: { select: { version: true } },
-      _count: { select: { offers: true } },
+      _count: { select: { offers: { where: { status: "PENDING" } } } },
     },
   });
 }
@@ -93,12 +96,26 @@ export async function findComparableByCategory(categoryId: string, excludeId?: s
       categoryId,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
-    select: { price: true },
+    select: { price: true, attributes: true },
     orderBy: { createdAt: "desc" },
     take: 20,
   });
 }
 
 export async function countOffers(listingId: string) {
-  return prisma.offer.count({ where: { listingId } });
+  return prisma.offer.count({ where: { listingId, status: "PENDING" } });
+}
+
+export async function listBySeller(sellerId: string) {
+  return prisma.listing.findMany({
+    where: { sellerId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      category: true,
+      images: { orderBy: { displayOrder: "asc" } },
+      schema: { select: { version: true } },
+      seller: { select: { id: true, name: true, avatar: true, createdAt: true } },
+      _count: { select: { offers: { where: { status: "PENDING" } } } },
+    },
+  });
 }

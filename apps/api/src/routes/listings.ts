@@ -1,13 +1,17 @@
 import { Router } from "express";
 import * as c from "../controllers/listingController";
 import * as o from "../controllers/offerController";
+import { authenticateRequired } from "../middleware/auth";
 
 const router = Router();
 
 router.get("/", c.listListings);
-router.post("/", c.createListing);
+router.post("/", authenticateRequired as any, c.createListing);
+router.get("/mine", authenticateRequired as any, c.myListings);
+router.post("/:id/view", c.recordView);
 router.get("/:id", c.getListing);
-router.get("/:id/offers", o.listOffers);
-router.post("/:id/offers", o.createOffer);
+router.get("/:id/offer-competitiveness", o.competitiveness);
+router.get("/:id/offers", authenticateRequired as any, o.listOffers);
+router.post("/:id/offers", authenticateRequired as any, o.createOffer);
 
 export default router;

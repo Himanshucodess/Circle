@@ -15,6 +15,8 @@ interface Stats {
   activeCategories: number
   fields: number
   listings: number
+  publishedSchemas: number
+  pendingRequests: number
 }
 
 export function AdminDashboard() {
@@ -47,7 +49,8 @@ export function AdminDashboard() {
     { label: "Total categories", value: stats?.categories ?? 0, icon: Layers, gradient: "from-violet-500 to-indigo-500", sub: `${stats?.activeCategories ?? 0} active` },
     { label: "Active categories", value: stats?.activeCategories ?? 0, icon: Activity, gradient: "from-emerald-500 to-teal-500", sub: "Live in seller flow" },
     { label: "Reusable fields", value: stats?.fields ?? 0, icon: Puzzle, gradient: "from-amber-500 to-orange-500", sub: "Attach anywhere" },
-    { label: "Listings", value: stats?.listings ?? 0, icon: ShoppingBag, gradient: "from-pink-500 to-rose-500", sub: "Published items" },
+    { label: "Listings", value: stats?.listings ?? 0, icon: ShoppingBag, gradient: "from-pink-500 to-rose-500", sub: "Marketplace items" },
+    { label: "Published schemas", value: stats?.publishedSchemas ?? 0, icon: ShoppingBag, gradient: "from-blue-500 to-cyan-500", sub: `${stats?.pendingRequests ?? 0} pending requests` },
   ]
 
   return (

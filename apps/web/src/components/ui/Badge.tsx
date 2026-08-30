@@ -35,7 +35,7 @@ export function Badge({ className, variant, tone, ...props }: BadgeProps) {
 
 export function ConditionBadge({ condition }: { condition: string }) {
   const tone =
-    condition === "NEW" ? "green" : condition === "LIKE_NEW" ? "brand" : condition === "REFURBISHED" ? "amber" : "neutral"
+    condition === "NEW" ? "green" : condition === "LIKE_NEW" ? "brand" : condition === "GOOD" ? "amber" : "neutral"
   return <Badge tone={tone as any}>{condition.replace(/_/g, " ")}</Badge>
 }
 

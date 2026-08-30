@@ -8,8 +8,15 @@ datasource db {
 }
 
 enum CategoryStatus {
+  DRAFT
   ACTIVE
   ARCHIVED
+}
+
+enum CategoryRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum FieldType {
@@ -102,6 +109,28 @@ model User {
 
   listings Listing[]
   offers   Offer[]
+  categoryRequests CategoryRequest[]
+}
+
+model CategoryRequest {
+  id              String                @id @default(cuid())
+  requestedBy     String
+  name            String
+  slug            String
+  description     String
+  reason          String
+  exampleProducts String?
+  status          CategoryRequestStatus  @default(PENDING)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  adminNote       String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  requester User @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+
+  @@index([requestedBy, status])
+  @@index([slug, status])
 }
 
 model Listing {
@@ -148,6 +177,7 @@ model Offer {
   message   String?
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   bidder  User?   @relation(fields: [bidderId], references: [id], onDelete: SetNull)

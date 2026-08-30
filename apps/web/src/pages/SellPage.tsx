@@ -14,6 +14,8 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/Badge"
 import { createListing } from "@/services/listingApi"
+import { requestCategory } from "@/services/categoryRequestApi"
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth"
 import { CategoryDto, CategorySchema } from "@marketplace/shared"
 import { formatAttributeValue } from "@/utils/formatValue"
 import { ArrowLeft, ArrowRight, Check, Sparkles, Package, FileText, Layers, Eye, PartyPopper, ShieldCheck } from "lucide-react"
@@ -53,6 +55,12 @@ export function SellPage() {
   const [listingId, setListingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [requestOpen, setRequestOpen] = useState(false)
+  const [requestForm, setRequestForm] = useState({ name: "", description: "", reason: "", exampleProducts: "" })
+  const [requestMessage, setRequestMessage] = useState<string | null>(null)
+  const [requestError, setRequestError] = useState<string | null>(null)
+  const [requestSubmitting, setRequestSubmitting] = useState(false)
+  const { user } = useUnifiedAuth() as any
 
   const { schema, loading: schemaLoading, error: schemaError } = useCategorySchema(category ? category.id : null)
 
@@ -79,6 +87,7 @@ export function SellPage() {
 
   const onPublish = async () => {
     if (!category || !common) return
+    if (!user) { setSubmitError("Please sign in to publish a listing."); return }
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -100,6 +109,15 @@ export function SellPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const submitCategoryRequest = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!user) { setRequestError("Please sign in to request a category."); return }
+    setRequestSubmitting(true); setRequestError(null)
+    try { await requestCategory(requestForm); setRequestMessage("Category request submitted. We'll review it and make it available if approved."); setRequestForm({ name: "", description: "", reason: "", exampleProducts: "" }); setRequestOpen(false) }
+    catch (e: any) { setRequestError(e.message || "Something went wrong.") }
+    finally { setRequestSubmitting(false) }
   }
 
   const renderStepper = () => {
@@ -154,7 +172,7 @@ export function SellPage() {
           </div>
 
           {categories.length === 0 ? (
-            <EmptyState icon="📦" title="No active categories available" description="Ask an admin to publish a category first." />
+            <EmptyState icon="📦" title="No categories available right now" description="Please try again shortly." />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {categories.map((c) => (
@@ -179,6 +197,12 @@ export function SellPage() {
               ))}
             </div>
           )}
+          <div className="mt-6 rounded-2xl border bg-card p-5">
+            <h2 className="font-semibold">Can't find what you're selling?</h2>
+            <p className="text-sm text-muted-foreground mt-1">Request a category and our team will review it.</p>
+            {requestMessage && <p className="text-sm text-emerald-600 mt-3">{requestMessage}</p>}
+            {!requestOpen ? <Button variant="outline" className="mt-4 rounded-full" onClick={() => setRequestOpen(true)}>Request a category</Button> : <form onSubmit={submitCategoryRequest} className="mt-4 space-y-3"><Input label="Category name" value={requestForm.name} onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })} required /><Textarea label="Description" value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} required /><Textarea label="Why do you need this category?" value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} required /><Input label="Example products (optional)" value={requestForm.exampleProducts} onChange={(e) => setRequestForm({ ...requestForm, exampleProducts: e.target.value })} />{requestError && <p className="text-sm text-destructive">{requestError}</p>}<div className="flex gap-2"><Button type="submit" loading={requestSubmitting} className="rounded-full">Request category</Button><Button type="button" variant="ghost" onClick={() => setRequestOpen(false)}>Cancel</Button></div></form>}
+          </div>
         </section>
       )}
 
@@ -219,12 +243,12 @@ export function SellPage() {
                     label="Price (₹)"
                     id="price"
                     type="number"
-                    min={0}
+                    min={1}
                     error={commonForm.formState.errors.price?.message}
                     {...commonForm.register("price", {
                       required: "Price is required",
                       valueAsNumber: true,
-                      min: { value: 0, message: "Price must be 0 or more" },
+                      min: { value: 1, message: "Price must be greater than 0" },
                     })}
                   />
                   <Select
@@ -236,8 +260,9 @@ export function SellPage() {
                     <option value="">Select condition</option>
                     <option value="NEW">New</option>
                     <option value="LIKE_NEW">Like New</option>
+                    <option value="GOOD">Good</option>
                     <option value="USED">Used</option>
-                    <option value="REFURBISHED">Refurbished</option>
+                    <option value="FAIR">Fair</option>
                   </Select>
                 </div>
                 <Input

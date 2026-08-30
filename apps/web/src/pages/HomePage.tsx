@@ -1,4 +1,3 @@
-import { useMemo } from "react"
 import { useSearchParams, Link } from "react-router-dom"
 import { useListings } from "@/hooks/useListings"
 import { ProductGrid } from "@/components/listings/ProductGrid"
@@ -6,31 +5,16 @@ import { PageLoader } from "@/components/ui/Spinner"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
-import { ArrowRight, Zap, SearchX } from "lucide-react"
+import { ArrowRight, SearchX } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { useCategories } from "@/hooks/useCategories"
 
 export function HomePage() {
   const [searchParams] = useSearchParams()
-  const query = (searchParams.get("q") ?? "").toLowerCase().trim()
-  const activeCategory = (searchParams.get("category") ?? "").toLowerCase().trim()
-  const { listings, loading, error } = useListings(40)
+  const query = (searchParams.get("q") ?? "").trim()
+  const activeCategory = (searchParams.get("category") ?? "").trim()
+  const { listings, loading, error } = useListings(40, { search: query, category: activeCategory })
   const { categories } = useCategories()
-
-  const filtered = useMemo(() => {
-    let out = listings
-    if (query) {
-      out = out.filter(
-        (l) =>
-          l.title.toLowerCase().includes(query) ||
-          l.category.name.toLowerCase().includes(query)
-      )
-    }
-    if (activeCategory) {
-      out = out.filter((l) => l.category.slug.toLowerCase() === activeCategory)
-    }
-    return out
-  }, [listings, query, activeCategory])
 
   return (
     <div>
@@ -74,17 +58,17 @@ export function HomePage() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                    <span className="bg-white rounded-full px-3 py-1.5 text-sm font-semibold shadow">From ₹1,999</span>
-                    <span className="bg-black/70 backdrop-blur text-white rounded-full px-3 py-1 text-xs flex items-center gap-1"><Zap className="w-3 h-3" /> Instant publish</span>
+                    <span className="bg-white rounded-full px-3 py-1.5 text-sm font-semibold shadow">Fresh finds</span>
+                    <span className="bg-black/70 backdrop-blur text-white rounded-full px-3 py-1 text-xs">Browse nearby</span>
                   </div>
                 </div>
                 <div className="p-3 pt-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500" />
                   <div>
-                    <div className="text-sm font-semibold">Verified sellers</div>
-                    <div className="text-xs text-muted-foreground">Trust & safety built-in</div>
+                    <div className="text-sm font-semibold">Find your next favorite</div>
+                    <div className="text-xs text-muted-foreground">Thoughtful finds from local sellers</div>
                   </div>
-                  <Badge className="ml-auto bg-emerald-100 text-emerald-700 border-0">Live</Badge>
+                  <Badge className="ml-auto bg-emerald-100 text-emerald-700 border-0">Explore</Badge>
                 </div>
               </Card>
             </div>
@@ -103,7 +87,7 @@ export function HomePage() {
                 <h2 className="text-sm font-semibold">
                   {query ? `Results for “${query}”` : `${activeCategory} listings`}
                 </h2>
-                <p className="text-xs text-muted-foreground">{filtered.length} listings found</p>
+                <p className="text-xs text-muted-foreground">{listings.length} listings found</p>
               </div>
             </div>
             <Link to="/" className="text-sm font-medium text-primary hover:underline">Clear</Link>
@@ -149,9 +133,9 @@ export function HomePage() {
 
         {loading && <ProductGrid listings={[]} loading />}
         {!loading && error && <ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} />}
-        {!loading && !error && <ProductGrid listings={filtered} />}
+        {!loading && !error && <ProductGrid listings={listings} />}
 
-        {!loading && !error && filtered.length > 0 && (
+        {!loading && !error && listings.length > 0 && (
           <div className="mt-10 rounded-2xl border bg-gradient-to-r from-indigo-50 to-violet-50 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="font-semibold">Got something to sell?</h3>

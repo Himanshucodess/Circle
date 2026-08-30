@@ -19,8 +19,12 @@ export async function listByListing(listingId: string) {
   });
 }
 
+export async function listPendingByListing(listingId: string) {
+  return prisma.offer.findMany({ where: { listingId, status: "PENDING" }, orderBy: { createdAt: "desc" } });
+}
+
 export async function countByListing(listingId: string) {
-  return prisma.offer.count({ where: { listingId } });
+  return prisma.offer.count({ where: { listingId, status: "PENDING" } });
 }
 
 export async function updateStatus(id: string, status: string) {

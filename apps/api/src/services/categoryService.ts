@@ -38,11 +38,13 @@ export async function archiveCategory(id: string) {
 }
 
 export async function getDashboardStats() {
-  const [categories, activeCategories, fields, listings] = await Promise.all([
+  const [categories, activeCategories, fields, listings, publishedSchemas, pendingRequests] = await Promise.all([
     categoryRepo.countAll(),
     categoryRepo.countActive(),
     (await import("../repositories/fieldRepository")).countAll(),
     (await import("../repositories/listingRepository")).countAll(),
+    categoryRepo.countPublishedSchemas(),
+    (await import("../lib/prisma")).default.categoryRequest.count({ where: { status: "PENDING" } }),
   ]);
-  return { categories, activeCategories, fields, listings };
+  return { categories, activeCategories, fields, listings, publishedSchemas, pendingRequests };
 }

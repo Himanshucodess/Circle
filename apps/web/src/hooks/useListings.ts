@@ -8,13 +8,13 @@ interface State {
   error: string | null;
 }
 
-export function useListings(limit?: number) {
+export function useListings(limit?: number, options?: { search?: string; category?: string }) {
   const [state, setState] = useState<State>({ listings: [], loading: true, error: null });
 
   useEffect(() => {
     let cancelled = false;
     setState({ listings: [], loading: true, error: null });
-    fetchListings(limit)
+    fetchListings(limit, options)
       .then((listings) => {
         if (!cancelled) setState({ listings, loading: false, error: null });
       })
@@ -24,7 +24,7 @@ export function useListings(limit?: number) {
     return () => {
       cancelled = true;
     };
-  }, [limit]);
+  }, [limit, options?.search, options?.category]);
 
   return state;
 }

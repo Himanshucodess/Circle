@@ -14,6 +14,9 @@ import { FieldEditorPage } from "@/pages/admin/FieldEditorPage";
 import { AuthProvider } from "@/context/AuthContext";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { ClerkAuthProvider } from "@/context/ClerkAuthContext";
+import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
+import { AdminGate } from "@/pages/admin/AdminGate";
+import { RequestsPage } from "@/pages/admin/RequestsPage";
 
 function PublicLayout() {
   return (
@@ -41,12 +44,14 @@ function AppRoutes() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
         </Route>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/categories" element={<CategoriesPage />} />
-        <Route path="/admin/categories/:id" element={<CategoryEditorPage />} />
-        <Route path="/admin/fields" element={<FieldsPage />} />
-        <Route path="/admin/fields/new" element={<FieldEditorPage />} />
-        <Route path="/admin/fields/:id" element={<FieldEditorPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminGate><AdminDashboard /></AdminGate>} />
+        <Route path="/admin/categories" element={<AdminGate><CategoriesPage /></AdminGate>} />
+        <Route path="/admin/categories/:id" element={<AdminGate><CategoryEditorPage /></AdminGate>} />
+        <Route path="/admin/fields" element={<AdminGate><FieldsPage /></AdminGate>} />
+        <Route path="/admin/fields/new" element={<AdminGate><FieldEditorPage /></AdminGate>} />
+        <Route path="/admin/fields/:id" element={<AdminGate><FieldEditorPage /></AdminGate>} />
+        <Route path="/admin/requests" element={<AdminGate><RequestsPage /></AdminGate>} />
       </Routes>
     </BrowserRouter>
   );

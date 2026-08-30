@@ -117,5 +117,7 @@ export async function publishCategory(categoryId: string) {
   const draft = await schemaRepo.ensureDraft(categoryId);
   await schemaRepo.updateDraftSchema(draft.id, { fields }, { fields });
 
-  return schemaRepo.publish(draft.id, categoryId);
+  const published = await schemaRepo.publish(draft.id, categoryId);
+  await categoryRepo.activate(categoryId);
+  return published;
 }

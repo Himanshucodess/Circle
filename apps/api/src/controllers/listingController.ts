@@ -16,7 +16,15 @@ export const getListing = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const createListing = asyncHandler(async (req: Request, res: Response) => {
-  const sellerId = (req as any).user?.id || null;
+  const sellerId = (req as any).user.id;
   const listing = await listingService.createListing(req.body, sellerId);
   res.status(201).json({ success: true, data: listing });
+});
+
+export const recordView = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await listingService.recordView(req.params.id) });
+});
+
+export const myListings = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await listingService.getSellerListings((req as any).user.id) });
 });

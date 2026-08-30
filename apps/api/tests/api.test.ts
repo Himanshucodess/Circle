@@ -2,8 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app";
 import prisma from "../src/lib/prisma";
+import { signToken } from "../src/services/authService";
+import { createOrUpdateClerk } from "../src/repositories/userRepository";
 
 const app = createApp();
+const admin = request.agent(app);
+let sellerToken = "";
 
 // Use timestamp to make slugs/keys unique and avoid collisions with seeded data.
 const ts = Date.now();
@@ -18,8 +22,15 @@ let publishedId: string;
 
 describe("Marketplace Dynamic Listing API", () => {
   beforeAll(async () => {
+    process.env.ADMIN_USERNAME = "admin1";
+    process.env.ADMIN_PASSWORD = "CircleStore";
+    process.env.ADMIN_SESSION_SECRET = "test-admin-session-secret";
     // Ensure DB is reachable
     await prisma.$connect();
+    const seller = await createOrUpdateClerk({ clerkId: `test_${Date.now()}`, email: `test_${Date.now()}@example.com`, name: "Test Seller" });
+    sellerToken = signToken(seller);
+    const login = await admin.post("/api/admin/auth/login").send({ username: "admin1", password: "CircleStore" });
+    if (login.status !== 200) throw new Error("Admin test session could not be created");
   });
 
   afterAll(async () => {
@@ -49,7 +60,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("creates a category", async () => {
-    const res = await request(app)
+    const res = await admin
       .post("/api/admin/categories")
       .send({ name: "Test Cat", slug: catSlug, icon: "🧪" });
     expect(res.status).toBe(201);
@@ -59,7 +70,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("creates a field", async () => {
-    const res = await request(app).post("/api/admin/fields").send({
+    const res = await admin.post("/api/admin/fields").send({
       key: fieldKeyA,
       label: "Test Field A",
       type: "TEXT",
@@ -68,7 +79,7 @@ describe("Marketplace Dynamic Listing API", () => {
     expect(res.status).toBe(201);
     fieldIdA = res.body.data.id;
 
-    const res2 = await request(app).post("/api/admin/fields").send({
+    const res2 = await admin.post("/api/admin/fields").send({
       key: fieldKeyB,
       label: "Test Field B",
       type: "NUMBER",
@@ -79,18 +90,18 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("attaches field to category", async () => {
-    const res = await request(app)
+    const res = await admin
       .post(`/api/admin/categories/${catId}/fields`)
       .send({ fieldId: fieldIdA, isRequired: true });
     expect(res.status).toBe(201);
-    const res2 = await request(app)
+    const res2 = await admin
       .post(`/api/admin/categories/${catId}/fields`)
       .send({ fieldId: fieldIdB });
     expect(res2.status).toBe(201);
   });
 
   it("publishes schema", async () => {
-    const res = await request(app).post(`/api/admin/categories/${catId}/schema/publish`);
+    const res = await admin.post(`/api/admin/categories/${catId}/schema/publish`);
     expect(res.status).toBe(201);
     publishedId = res.body.data.id;
   });
@@ -103,7 +114,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("creates valid listing", async () => {
-    const res = await request(app).post("/api/listings").send({
+    const res = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: catId,
       title: "Test Listing Valid",
       description: "A valid listing with enough description length",
@@ -117,7 +128,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("rejects invalid listing (common validation)", async () => {
-    const res = await request(app).post("/api/listings").send({
+    const res = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: catId,
       title: "bad",
       description: "short",
@@ -131,7 +142,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("rejects invalid dynamic attributes (max)", async () => {
-    const res = await request(app).post("/api/listings").send({
+    const res = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: catId,
       title: "Valid title here",
       description: "Description long enough to pass common validation",
@@ -146,18 +157,18 @@ describe("Marketplace Dynamic Listing API", () => {
 
   it("validates conditional fields", async () => {
     // Create a conditional category
-    const catRes = await request(app)
+    const catRes = await admin
       .post("/api/admin/categories")
       .send({ name: "Cond Cat", slug: `cond-cat-${ts}`, icon: "🔀" });
     const condCatId = catRes.body.data.id;
 
-    const f1 = await request(app).post("/api/admin/fields").send({
+    const f1 = await admin.post("/api/admin/fields").send({
       key: `cond_under_${ts}`,
       label: "Under Warranty",
       type: "RADIO",
       config: { options: [{ label: "Yes", value: "true" }, { label: "No", value: "false" }] },
     });
-    const f2 = await request(app).post("/api/admin/fields").send({
+    const f2 = await admin.post("/api/admin/fields").send({
       key: `cond_expiry_${ts}`,
       label: "Warranty Expiry",
       type: "DATE",
@@ -166,17 +177,17 @@ describe("Marketplace Dynamic Listing API", () => {
     const fid1 = f1.body.data.id;
     const fid2 = f2.body.data.id;
 
-    await request(app).post(`/api/admin/categories/${condCatId}/fields`).send({ fieldId: fid1 });
-    await request(app).post(`/api/admin/categories/${condCatId}/fields`).send({ fieldId: fid2, isRequired: true });
+    await admin.post(`/api/admin/categories/${condCatId}/fields`).send({ fieldId: fid1 });
+    await admin.post(`/api/admin/categories/${condCatId}/fields`).send({ fieldId: fid2, isRequired: true });
     // Make expiry conditional on underWarranty == true
-    await request(app)
+    await admin
       .patch(`/api/admin/categories/${condCatId}/fields/${fid2}`)
       .send({ conditionalRule: { field: `cond_under_${ts}`, operator: "equals", value: "true" } });
 
-    await request(app).post(`/api/admin/categories/${condCatId}/schema/publish`);
+    await admin.post(`/api/admin/categories/${condCatId}/schema/publish`);
 
     // Hidden -> should pass without expiry
-    const okHidden = await request(app).post("/api/listings").send({
+    const okHidden = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: condCatId,
       title: "Cond hidden ok",
       description: "Description long enough for conditional hidden test",
@@ -188,7 +199,7 @@ describe("Marketplace Dynamic Listing API", () => {
     expect(okHidden.status).toBe(201);
 
     // Visible but missing required -> should fail
-    const failVisible = await request(app).post("/api/listings").send({
+    const failVisible = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: condCatId,
       title: "Cond visible fail",
       description: "Description long enough for conditional visible fail",
@@ -200,7 +211,7 @@ describe("Marketplace Dynamic Listing API", () => {
     expect(failVisible.status).toBe(400);
 
     // Visible and provided -> pass
-    const okVisible = await request(app).post("/api/listings").send({
+    const okVisible = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: condCatId,
       title: "Cond visible ok",
       description: "Description long enough for conditional visible ok",
@@ -213,7 +224,7 @@ describe("Marketplace Dynamic Listing API", () => {
   });
 
   it("listing uses correct schema version and old listings remain after republish", async () => {
-    const firstListing = await request(app).post("/api/listings").send({
+    const firstListing = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
       categoryId: catId,
       title: "Version test 1",
       description: "Description long enough for version test one",
@@ -227,14 +238,14 @@ describe("Marketplace Dynamic Listing API", () => {
     const ver1 = detailV1.body.data.schemaVersion;
 
     // Add another field and republish to bump version
-    const f3 = await request(app).post("/api/admin/fields").send({
+    const f3 = await admin.post("/api/admin/fields").send({
       key: `extra_${ts}`,
       label: "Extra",
       type: "TEXT",
       config: {},
     });
-    await request(app).post(`/api/admin/categories/${catId}/fields`).send({ fieldId: f3.body.data.id });
-    await request(app).post(`/api/admin/categories/${catId}/schema/publish`);
+    await admin.post(`/api/admin/categories/${catId}/fields`).send({ fieldId: f3.body.data.id });
+    await admin.post(`/api/admin/categories/${catId}/schema/publish`);
 
     const after = await request(app).get(`/api/categories/${catSlug}/schema`);
     expect(after.body.data.version).toBeGreaterThan(ver1);

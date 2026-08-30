@@ -185,7 +185,7 @@ export function CategoriesPage() {
                 {c.description && <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{c.description}</p>}
                 <div className="mt-3 flex items-center gap-2 text-xs">
                   <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 font-medium"><Package className="w-3 h-3" /> {fieldCounts[c.id] ?? 0} fields</span>
-                  <span className="text-muted-foreground">{c.status === "ACTIVE" ? "Live in store" : "Archived"}</span>
+                  <span className="text-muted-foreground">{c.status === "ACTIVE" ? "Live in store" : c.status === "DRAFT" ? "Needs a published schema" : "Archived"}</span>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Button size="sm" className="flex-1 rounded-full" onClick={() => navigate(`/admin/categories/${c.id}`)}><Settings2 className="w-3.5 h-3.5" /> Manage</Button>
@@ -380,7 +380,7 @@ function CreateCategoryWizard({
                   <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{form.name}</span></div>
                   <div><span className="text-muted-foreground">Slug:</span> <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">/{form.slug}</span></div>
                   <div><span className="text-muted-foreground">Icon:</span> <span className="text-lg">{form.icon}</span></div>
-                  <div><span className="text-muted-foreground">Status:</span> <Badge variant="green">ACTIVE</Badge></div>
+                  <div><span className="text-muted-foreground">Status:</span> <Badge variant="secondary">DRAFT</Badge></div>
                 </div>
                 {form.description && <p className="text-sm text-muted-foreground leading-relaxed">{form.description}</p>}
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 flex gap-2">

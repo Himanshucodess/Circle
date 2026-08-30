@@ -1,0 +1,18 @@
+import { useEffect, useState } from "react";
+import { AdminLayout } from "./AdminLayout";
+import { fetchCategoryRequests, reviewCategoryRequest } from "@/services/adminApi";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PageLoader } from "@/components/ui/Spinner";
+import { ErrorState } from "@/components/ui/ErrorState";
+
+export function RequestsPage() {
+  const [requests, setRequests] = useState<any[]>([]); const [filter, setFilter] = useState("ALL"); const [search, setSearch] = useState(""); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null); const [busy, setBusy] = useState<string | null>(null);
+  const load = () => { setLoading(true); fetchCategoryRequests().then(setRequests).catch(() => setError("Something went wrong.")).finally(() => setLoading(false)); };
+  useEffect(load, []);
+  const shown = requests.filter((r) => (filter === "ALL" || r.status === filter) && (!search || r.name.toLowerCase().includes(search.toLowerCase())));
+  const review = async (id: string, status: "APPROVED" | "REJECTED") => { setBusy(id); try { await reviewCategoryRequest(id, status); load(); } finally { setBusy(null); } };
+  return <AdminLayout><div className="flex flex-wrap items-center justify-between gap-4 mb-6"><div><h1 className="text-2xl font-display font-bold">Category Requests</h1><p className="text-sm text-muted-foreground mt-1">Review new category ideas from sellers.</p></div><div className="flex gap-2"><Button variant={filter === "ALL" ? "default" : "outline"} onClick={() => setFilter("ALL")}>All</Button><Button variant={filter === "PENDING" ? "default" : "outline"} onClick={() => setFilter("PENDING")}>Pending</Button><Button variant={filter === "APPROVED" ? "default" : "outline"} onClick={() => setFilter("APPROVED")}>Approved</Button><Button variant={filter === "REJECTED" ? "default" : "outline"} onClick={() => setFilter("REJECTED")}>Rejected</Button></div></div><Card className="mb-5"><CardContent className="p-3"><Input placeholder="Search requests" value={search} onChange={(e) => setSearch(e.target.value)} /></CardContent></Card>{loading ? <PageLoader label="Loading requests..." /> : error ? <ErrorState message="Something went wrong." onRetry={load} /> : <div className="space-y-3">{shown.map((r) => <Card key={r.id}><CardContent className="p-5"><div className="flex flex-col md:flex-row md:items-start justify-between gap-4"><div><div className="flex items-center gap-2"><h2 className="font-semibold">{r.name}</h2><Badge variant={r.status === "PENDING" ? "secondary" : r.status === "APPROVED" ? "green" : "neutral"}>{r.status}</Badge></div><p className="text-sm text-muted-foreground mt-2">Requested by {r.requester?.name || r.requester?.email || "seller"} · {new Date(r.createdAt).toLocaleDateString()}</p><p className="text-sm mt-3">{r.description}</p><p className="text-sm text-muted-foreground mt-1">{r.reason}</p>{r.exampleProducts && <p className="text-xs text-muted-foreground mt-2">Examples: {r.exampleProducts}</p>}</div>{r.status === "PENDING" && <div className="flex gap-2 shrink-0"><Button className="rounded-full" loading={busy === r.id} onClick={() => review(r.id, "APPROVED")}>Approve</Button><Button variant="outline" className="rounded-full" disabled={busy === r.id} onClick={() => review(r.id, "REJECTED")}>Reject</Button></div>}</div></CardContent></Card>)}{shown.length === 0 && <div className="text-center text-sm text-muted-foreground py-12">No requests found.</div>}</div>}</AdminLayout>;
+}

@@ -31,6 +31,7 @@ function toDto(listing: any) {
     schemaVersion: listing.schema ? listing.schema.version : null,
     images,
     createdAt: listing.createdAt,
+    seller: listing.seller ? { id: listing.seller.id, name: listing.seller.name, avatar: listing.seller.avatar, memberSince: listing.seller.createdAt } : null,
   };
 }
 
@@ -40,31 +41,21 @@ export async function getListings(limit?: number, opts?: { search?: string; cate
 }
 
 export async function getListing(id: string) {
-  // Increment view count (simple, not deduped per user for assignment scope)
-  try {
-    await listingRepo.incrementViewCount(id);
-  } catch (_) {
-    // ignore if fails
-  }
   const listing = await listingRepo.findById(id);
   if (!listing) throw ApiError.notFound("Listing not found");
 
   const dto: any = toDto(listing);
-  // viewCount was just incremented, reflect +1 if we didn't refetch
-  dto.viewCount = (listing.viewCount ?? 0) + 1;
 
-  // Offer count and recent offers
+  // Exact offer amounts are private to the seller and are never part of the public listing DTO.
   try {
     const offerCount = await listingRepo.countOffers(id);
     dto.offerCount = offerCount;
-    const offers = await (await import("../repositories/offerRepository")).listByListing(id);
-    dto.offers = offers.slice(0, 5);
   } catch {}
 
   // Pricing insight
   try {
     const pricing = await (await import("./pricingService")).getPricingInsight(listing.price, listing.categoryId, listing.id);
-    dto.pricingInsight = pricing;
+    dto.pricingInsight = { ...pricing, medianPrice: undefined, range: undefined };
   } catch {}
 
   // Load the schema snapshot referenced by this listing so we can render
@@ -140,4 +131,15 @@ export async function createListing(body: unknown, sellerId?: string | null) {
   });
 
   return toDto(listing);
+}
+
+export async function recordView(id: string) {
+  const listing = await listingRepo.findById(id);
+  if (!listing) throw ApiError.notFound("Listing not found");
+  await listingRepo.incrementViewCount(id);
+  return { viewCount: (listing.viewCount ?? 0) + 1 };
+}
+
+export async function getSellerListings(sellerId: string) {
+  return (await listingRepo.listBySeller(sellerId)).map(toDto);
 }

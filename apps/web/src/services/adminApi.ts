@@ -1,6 +1,22 @@
 import { apiFetch } from "@/utils/api";
 import { CategoryDto } from "@marketplace/shared";
 
+export async function adminLogin(username: string, password: string) {
+  const response = await fetch("/api/admin/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ username, password }) });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body?.error?.message || "Invalid username or password.");
+  return body.data;
+}
+export async function adminLogout() { await fetch("/api/admin/auth/logout", { method: "POST", credentials: "include" }); }
+export async function adminSession() {
+  const response = await fetch("/api/admin/auth/me", { credentials: "include" });
+  if (!response.ok) return null;
+  const body = await response.json();
+  return body.data;
+}
+export async function fetchCategoryRequests() { return apiFetch<any[]>("/api/category-requests/admin"); }
+export async function reviewCategoryRequest(id: string, status: "APPROVED" | "REJECTED", adminNote?: string) { return apiFetch<any>(`/api/category-requests/admin/${id}`, { method: "PATCH", body: JSON.stringify({ status, adminNote }) }); }
+
 export type CategoryFieldAdmin = {
   id: string;
   categoryId: string;
@@ -43,6 +59,8 @@ export async function fetchStats(): Promise<{
   activeCategories: number;
   fields: number;
   listings: number;
+  publishedSchemas: number;
+  pendingRequests: number;
 }> {
   return apiFetch<any>("/api/admin/categories/stats");
 }
