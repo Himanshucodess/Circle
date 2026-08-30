@@ -274,8 +274,8 @@ function CreateCategoryWizard({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl p-0 overflow-hidden gap-0" onClose={onClose}>
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-600 p-6 text-white relative overflow-hidden">
+      <DialogContent className="max-w-xl max-h-[calc(100vh-2rem)] p-0 overflow-hidden flex flex-col gap-0" onClose={onClose}>
+        <div className="shrink-0 bg-gradient-to-br from-violet-600 to-indigo-600 p-6 text-white relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
           <div className="relative">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center mb-3"><Sparkles className="w-5 h-5" /></div>
@@ -292,7 +292,7 @@ function CreateCategoryWizard({
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           {serverError && (
             <div className="mb-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3 flex gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /> {serverError}
