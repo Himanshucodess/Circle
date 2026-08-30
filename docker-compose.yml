@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: marketplace-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: marketplace
+      POSTGRES_DB: marketplace
+    ports:
+      # Host port is configurable via POSTGRES_PORT in .env (defaults to 5432).
+      # On machines where a local Postgres already uses 5432, set POSTGRES_PORT=5433.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - marketplace_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketplace -d marketplace"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  marketplace_db_data:

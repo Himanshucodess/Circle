@@ -1,0 +1,33 @@
+{
+  "name": "marketplace-dynamic-listing",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Schema-driven secondhand marketplace listing system",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @marketplace/api\" \"npm run dev -w @marketplace/web\"",
+    "dev:api": "npm run dev -w @marketplace/api",
+    "dev:web": "npm run dev -w @marketplace/web",
+    "build": "npm run build -w @marketplace/shared && npm run build -w @marketplace/api && npm run build -w @marketplace/web",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npx prisma migrate dev",
+    "db:migrate:deploy": "npx prisma migrate deploy",
+    "db:seed": "npx prisma db seed",
+    "db:generate": "npx prisma generate",
+    "test": "npm run test -w @marketplace/api && npm run test -w @marketplace/web",
+    "test:api": "npm run test -w @marketplace/api",
+    "test:web": "npm run test -w @marketplace/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
