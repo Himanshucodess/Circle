@@ -2,11 +2,11 @@ import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Search, ShoppingBag, Store, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { useAuth } from "@/context/AuthContext"
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth"
 
 export function Header() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout } = useUnifiedAuth()
   const [query, setQuery] = useState("")
 
   const onSearch = (e: React.FormEvent) => {

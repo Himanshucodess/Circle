@@ -92,19 +92,16 @@ model SchemaVersion {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  name       String?
-  avatar     String?
-  provider   String? // google | github | facebook
-  providerId String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  clerkId   String?  @unique // Clerk user ID (e.g., user_xxx)
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   listings Listing[]
   offers   Offer[]
-
-  @@index([provider, providerId])
 }
 
 model Listing {

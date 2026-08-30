@@ -3,17 +3,22 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { useAuth } from "@/context/AuthContext";
+import { useUnifiedAuth } from "@/hooks/useUnifiedAuth";
 import { fetchProviders, demoLogin } from "@/services/authApi";
 import { Globe, Code2, Users, Sparkles, ArrowLeft } from "lucide-react";
+import { SignIn } from "@clerk/clerk-react";
+
+const CLERK_KEY = (import.meta as any).env?.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
+const isClerkValid = !!CLERK_KEY && /^pk_(test|live)_[A-Za-z0-9_\-]{10,}$/.test(CLERK_KEY);
 
 export function LoginPage() {
-  const [providers, setProviders] = useState({ google: false, github: false, facebook: false });
+  const [providers, setProviders] = useState({ google: false, github: false, facebook: false, clerk: false } as any);
   const [demoEmail, setDemoEmail] = useState("");
   const [demoName, setDemoName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, user } = useAuth();
+  const { user, refresh: unifiedRefresh } = useUnifiedAuth() as any;
+  // legacy login only for demo (Clerk uses its own flow)
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -31,8 +36,18 @@ export function LoginPage() {
     setError(null);
     try {
       const data = await demoLogin(demoEmail || undefined, demoName || undefined);
-      login(data.token, data.user);
+      localStorage.setItem("token", data.token);
+      // Refresh legacy context then navigate; works with Clerk enabled due to merged providers
+      try {
+        await unifiedRefresh?.();
+      } catch {}
       navigate(next);
+      // Fallback hard reload if navigation didn't update auth
+      setTimeout(() => {
+        if (!localStorage.getItem("token")) return;
+        // ensure page reflects new user
+        window.location.href = next;
+      }, 400);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -41,6 +56,38 @@ export function LoginPage() {
   };
 
   const oauthUrl = (provider: string) => `http://localhost:4000/api/auth/${provider}`;
+
+  // If Clerk is configured, show Clerk's SignIn (handles Google/GitHub/Facebook via Clerk dashboard)
+  if (isClerkValid) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-4 gap-6">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader className="text-center">
+            <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <CardTitle className="text-2xl">Welcome to CircleStore</CardTitle>
+            <CardDescription>Sign in with Clerk — Google, GitHub, Facebook configured via Clerk Dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <SignIn fallbackRedirectUrl={next} signUpFallbackRedirectUrl={next} routing="hash" />
+          </CardContent>
+        </Card>
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 space-y-3">
+            <div className="text-center text-sm font-medium">Or continue as demo (no Clerk account needed)</div>
+            <Input placeholder="Email (optional)" value={demoEmail} onChange={(e) => setDemoEmail(e.target.value)} />
+            <Input placeholder="Name (optional)" value={demoName} onChange={(e) => setDemoName(e.target.value)} />
+            <Button className="w-full rounded-full" onClick={handleDemo} loading={loading}>Continue as Demo User</Button>
+            {error && <div className="rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3">{error}</div>}
+            <div className="text-center">
+              <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← Back to marketplace</Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-4">

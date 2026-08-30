@@ -1,34 +1,27 @@
 import { Router } from "express";
-import passport from "passport";
 import { signToken } from "../services/authService";
 import { authenticateOptional } from "../middleware/auth";
 
 const router = Router();
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-function issueTokenAndRedirect(req: any, res: any) {
-  const user = req.user as any;
-  const token = signToken(user);
-  // httpOnly cookie for API + redirect with token for localStorage
-  res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 7 * 24 * 3600 * 1000,
-  });
-  // also pass via query for frontend to store
-  const redirect = `${FRONTEND_URL}/auth/callback?token=${encodeURIComponent(token)}&name=${encodeURIComponent(user.name || "")}&avatar=${encodeURIComponent(user.avatar || "")}&email=${encodeURIComponent(user.email)}`;
-  res.redirect(redirect);
+// Clerk status — checks if Clerk keys are set and look valid (avoids dummy values)
+function isClerkConfigured() {
+  const sec = process.env.CLERK_SECRET_KEY || "";
+  const pub = process.env.CLERK_PUBLISHABLE_KEY || "";
+  const secValid = !!sec && /^sk_(test|live)_[A-Za-z0-9_\-]{10,}$/.test(sec);
+  const pubValid = !!pub && /^pk_(test|live)_[A-Za-z0-9_\-]{10,}$/.test(pub);
+  return secValid && pubValid;
 }
-
-// providers status
 router.get("/providers", (req, res) => {
+  const clerkConfigured = isClerkConfigured();
+  // Clerk handles Google/GitHub/Facebook via its dashboard, so we report clerk as provider
   res.json({
     success: true,
     data: {
-      google: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
-      github: !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
-      facebook: !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET),
+      clerk: clerkConfigured,
+      google: clerkConfigured,
+      github: clerkConfigured,
+      facebook: clerkConfigured,
     },
   });
 });
@@ -40,46 +33,43 @@ router.get("/me", authenticateOptional as any, (req: any, res) => {
 
 router.post("/logout", (req, res) => {
   res.clearCookie("token");
+  res.clearCookie("__session");
   res.json({ success: true, data: { message: "Logged out" } });
 });
 
-// Demo login (when OAuth not configured) — creates a mock user
+// Demo login — still works when Clerk not configured, creates local user + JWT
 router.post("/demo", async (req, res) => {
   const { email, name } = req.body || {};
   const demoEmail = email || `demo_${Date.now()}@circlestore.local`;
   const demoName = name || "Demo User";
-  const { createOrUpdateOAuth } = await import("../repositories/userRepository");
-  const user = await createOrUpdateOAuth({
+  const { createOrUpdateClerk } = await import("../repositories/userRepository");
+  const clerkId = `demo_${demoEmail}`;
+  const user = await createOrUpdateClerk({
+    clerkId,
     email: demoEmail,
     name: demoName,
     avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(demoEmail)}`,
-    provider: "demo",
-    providerId: demoEmail,
   });
   const token = signToken(user);
   res.cookie("token", token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 7 * 24 * 3600 * 1000 });
   res.json({ success: true, data: { token, user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar } } });
 });
 
-// Google
-router.get("/google", (req, res, next) => {
-  if (!process.env.GOOGLE_CLIENT_ID) return res.status(404).json({ success: false, error: { code: "NOT_CONFIGURED", message: "Google OAuth not configured. Set GOOGLE_CLIENT_ID/SECRET." } });
-  passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+// Sync Clerk user to our DB — called after Clerk sign-in from frontend via Authorization header
+router.post("/sync", authenticateOptional as any, async (req: any, res) => {
+  if (!req.user) return res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "No Clerk session" } });
+  res.json({ success: true, data: req.user });
 });
-router.get("/google/callback", passport.authenticate("google", { session: false, failureRedirect: `${FRONTEND_URL}/login?error=google` }), issueTokenAndRedirect);
 
-// GitHub
-router.get("/github", (req, res, next) => {
-  if (!process.env.GITHUB_CLIENT_ID) return res.status(404).json({ success: false, error: { code: "NOT_CONFIGURED", message: "GitHub OAuth not configured." } });
-  passport.authenticate("github", { scope: ["user:email"] })(req, res, next);
+// Legacy OAuth routes — now handled by Clerk, return info
+router.get("/google", (req, res) => {
+  res.status(410).json({ success: false, error: { code: "MOVED", message: "OAuth now handled by Clerk. Use /login with Clerk SignIn." } });
 });
-router.get("/github/callback", passport.authenticate("github", { session: false, failureRedirect: `${FRONTEND_URL}/login?error=github` }), issueTokenAndRedirect);
-
-// Facebook
-router.get("/facebook", (req, res, next) => {
-  if (!process.env.FACEBOOK_CLIENT_ID) return res.status(404).json({ success: false, error: { code: "NOT_CONFIGURED", message: "Facebook OAuth not configured." } });
-  passport.authenticate("facebook", { scope: ["email"] })(req, res, next);
+router.get("/github", (req, res) => {
+  res.status(410).json({ success: false, error: { code: "MOVED", message: "OAuth now handled by Clerk." } });
 });
-router.get("/facebook/callback", passport.authenticate("facebook", { session: false, failureRedirect: `${FRONTEND_URL}/login?error=facebook` }), issueTokenAndRedirect);
+router.get("/facebook", (req, res) => {
+  res.status(410).json({ success: false, error: { code: "MOVED", message: "OAuth now handled by Clerk." } });
+});
 
 export default router;

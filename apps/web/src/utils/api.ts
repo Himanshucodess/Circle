@@ -13,8 +13,28 @@ export class ApiClientError extends Error {
   }
 }
 
+async function getAuthToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+
+  // Ask Clerk for a fresh token first. The cached token is only a fallback for
+  // the short window before Clerk has attached its session to the page.
+  try {
+    const clerk = (window as any).Clerk;
+    const freshToken = await clerk?.session?.getToken?.();
+    if (freshToken) {
+      localStorage.setItem("clerk_token", freshToken);
+      return freshToken;
+    }
+  } catch {}
+
+  // Clerk token takes precedence when present (fresh short-lived JWT)
+  const clerkToken = localStorage.getItem("clerk_token") || localStorage.getItem("__clerk_token");
+  if (clerkToken) return clerkToken;
+  return localStorage.getItem("token");
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = await getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

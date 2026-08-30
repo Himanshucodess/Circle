@@ -16,7 +16,7 @@ interface AuthState {
   refresh: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
+export const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -66,6 +66,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch {}
     localStorage.removeItem("token");
+    // also clear Clerk token if unified logout didn't fire
+    try {
+      localStorage.removeItem("clerk_token");
+      localStorage.removeItem("__clerk_token");
+    } catch {}
     setToken(null);
     setUser(null);
   };

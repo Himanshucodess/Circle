@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma";
 
-export async function findByProvider(provider: string, providerId: string) {
-  return prisma.user.findFirst({ where: { provider, providerId } });
+export async function findByClerkId(clerkId: string) {
+  return prisma.user.findUnique({ where: { clerkId } });
 }
 
 export async function findByEmail(email: string) {
@@ -12,34 +12,32 @@ export async function findById(id: string) {
   return prisma.user.findUnique({ where: { id } });
 }
 
-export async function createOrUpdateOAuth(data: {
+export async function createOrUpdateClerk(data: {
+  clerkId: string;
   email: string;
   name?: string | null;
   avatar?: string | null;
-  provider: string;
-  providerId: string;
 }) {
-  const existingByProvider = await findByProvider(data.provider, data.providerId);
-  if (existingByProvider) {
+  const existing = await findByClerkId(data.clerkId);
+  if (existing) {
     return prisma.user.update({
-      where: { id: existingByProvider.id },
-      data: { name: data.name, avatar: data.avatar, email: data.email },
+      where: { id: existing.id },
+      data: { email: data.email, name: data.name, avatar: data.avatar },
     });
   }
-  const existingByEmail = await findByEmail(data.email);
-  if (existingByEmail) {
+  const byEmail = await findByEmail(data.email);
+  if (byEmail) {
     return prisma.user.update({
-      where: { id: existingByEmail.id },
-      data: { provider: data.provider, providerId: data.providerId, name: data.name, avatar: data.avatar },
+      where: { id: byEmail.id },
+      data: { clerkId: data.clerkId, name: data.name, avatar: data.avatar },
     });
   }
   return prisma.user.create({
     data: {
+      clerkId: data.clerkId,
       email: data.email,
       name: data.name,
       avatar: data.avatar,
-      provider: data.provider,
-      providerId: data.providerId,
     },
   });
 }
