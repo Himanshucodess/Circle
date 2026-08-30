@@ -54,6 +54,9 @@
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  .dark .text-3xl.font-extrabold {
+    color: hsl(var(--foreground));
+  }
   h1, h2, h3 {
     @apply tracking-tight;
   }

@@ -2,6 +2,14 @@
 circle.lightchan.online {
     encode gzip
 
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    }
+
     @api path /api/*
     handle @api {
         reverse_proxy api:4000

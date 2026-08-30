@@ -15,16 +15,30 @@ import categoryRequestsRouter from "./routes/categoryRequests";
 
 export function createApp() {
   const app = express();
+  app.disable("x-powered-by");
+  if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
   const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+  const allowedOrigins = process.env.NODE_ENV === "production" ? [FRONTEND_URL] : [FRONTEND_URL, "http://localhost:5173"];
 
   app.use(
     cors({
-      origin: [FRONTEND_URL, "http://localhost:5173"],
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error("Origin not allowed"));
+      },
       credentials: true,
     })
   );
   app.use(express.json({ limit: "2mb" }));
   app.use(cookieParser());
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (process.env.NODE_ENV === "production") res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    next();
+  });
   // Clerk — only enable if keys look valid; invalid/dummy keys would crash middleware, so guard
   const clerkSecret = process.env.CLERK_SECRET_KEY || "";
   const clerkPub = process.env.CLERK_PUBLISHABLE_KEY || "";

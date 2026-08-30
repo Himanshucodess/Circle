@@ -33,7 +33,7 @@ export function ProductCard({ listing }: { listing: ListingDto }) {
         </div>
         {/* bottom price */}
         <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-          <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-sm font-bold shadow-md">
+          <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-sm font-bold text-slate-950 shadow-md">
             ₹{listing.price.toLocaleString()}
           </span>
           <span className="hidden group-hover:inline-flex items-center gap-1 text-xs font-medium text-white bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full">
