@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: circlestore-${{ github.ref }}
@@ -64,7 +65,7 @@ jobs:
   deploy:
     name: Deploy to EC2
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: production
     env:
