@@ -85,10 +85,15 @@ jobs:
 
       - name: Configure SSH
         shell: bash
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' '${{ secrets.EC2_SSH_KEY }}' > "$HOME/.ssh/circlestore.pem"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$EC2_SSH_KEY" > "$HOME/.ssh/circlestore.pem"
           chmod 600 "$HOME/.ssh/circlestore.pem"
+          test -s "$HOME/.ssh/circlestore.pem"
+          ssh-keygen -y -f "$HOME/.ssh/circlestore.pem" > /dev/null
           ssh-keyscan -H "$DEPLOY_HOST" >> "$HOME/.ssh/known_hosts"
 
       - name: Check remote Docker
