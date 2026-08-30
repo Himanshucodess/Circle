@@ -155,7 +155,7 @@ export function CategoriesPage() {
       )}
 
       {loading && <PageLoader label="Loading categories..." />}
-      {!loading && error && <ErrorState message={error} onRetry={load} />}
+      {!loading && error && <ErrorState message="Something went wrong. Please try again." onRetry={load} />}
       {!loading && !error && categories.length === 0 && (
         <EmptyState
           icon={<Layers className="w-6 h-6" />}

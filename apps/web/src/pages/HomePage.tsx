@@ -6,22 +6,31 @@ import { PageLoader } from "@/components/ui/Spinner"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
-import { ArrowRight, Sparkles, ShieldCheck, Zap, SearchX } from "lucide-react"
+import { ArrowRight, Zap, SearchX } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import { useCategories } from "@/hooks/useCategories"
 
 export function HomePage() {
   const [searchParams] = useSearchParams()
   const query = (searchParams.get("q") ?? "").toLowerCase().trim()
+  const activeCategory = (searchParams.get("category") ?? "").toLowerCase().trim()
   const { listings, loading, error } = useListings(40)
+  const { categories } = useCategories()
 
   const filtered = useMemo(() => {
-    if (!query) return listings
-    return listings.filter(
-      (l) =>
-        l.title.toLowerCase().includes(query) ||
-        l.category.name.toLowerCase().includes(query)
-    )
-  }, [listings, query])
+    let out = listings
+    if (query) {
+      out = out.filter(
+        (l) =>
+          l.title.toLowerCase().includes(query) ||
+          l.category.name.toLowerCase().includes(query)
+      )
+    }
+    if (activeCategory) {
+      out = out.filter((l) => l.category.slug.toLowerCase() === activeCategory)
+    }
+    return out
+  }, [listings, query, activeCategory])
 
   return (
     <div>
@@ -35,15 +44,12 @@ export function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 py-14 md:py-20">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <Badge variant="secondary" className="bg-white/15 text-white border-white/20 backdrop-blur hover:bg-white/20 mb-4">
-                <Sparkles className="w-3 h-3 mr-1" /> Schema-driven marketplace
-              </Badge>
               <h1 className="text-4xl md:text-5xl font-display font-extrabold leading-[1.05] tracking-tight">
                 Buy and sell
                 <span className="block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">things you love.</span>
               </h1>
               <p className="mt-4 text-white/80 text-base md:text-lg max-w-xl leading-relaxed">
-                Secondhand made simple. Category-smart forms adapt instantly — add a Bicycle, Sneakers or Vinyl category without shipping a line of frontend code.
+                Find great pre-owned products from people around you. Discover deals on phones, laptops, furniture and more.
               </p>
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Link to="/sell">
@@ -51,23 +57,12 @@ export function HomePage() {
                     Sell something <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link to="/admin" className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 backdrop-blur px-5 py-2.5 text-sm font-medium hover:bg-white/15 transition-colors">
-                  <ShieldCheck className="w-4 h-4" /> Admin panel
-                </Link>
+                <a href="#listings" className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 backdrop-blur px-5 py-2.5 text-sm font-medium hover:bg-white/15 transition-colors">
+                  Browse listings <ArrowRight className="w-4 h-4" />
+                </a>
               </div>
 
-              <div className="mt-8 grid grid-cols-3 gap-4 max-w-md">
-                {[
-                  { k: `${listings.length}+`, v: "Active listings" },
-                  { k: "14+", v: "Reusable fields" },
-                  { k: "100%", v: "Dynamic forms" },
-                ].map((s) => (
-                  <div key={s.v} className="rounded-2xl bg-white/10 backdrop-blur border border-white/10 p-3 text-center">
-                    <div className="text-lg font-bold">{s.k}</div>
-                    <div className="text-xs text-white/70">{s.v}</div>
-                  </div>
-                ))}
-              </div>
+
             </div>
 
             <div className="hidden lg:block">
@@ -97,25 +92,54 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 py-8 md:py-10">
-        {query && (
+      <section id="listings" className="max-w-7xl mx-auto px-4 py-8 md:py-10">
+        {(query || activeCategory) && (
           <div className="mb-6 flex items-center justify-between rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <SearchX className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold">Results for “{query}”</h2>
+                <h2 className="text-sm font-semibold">
+                  {query ? `Results for “${query}”` : `${activeCategory} listings`}
+                </h2>
                 <p className="text-xs text-muted-foreground">{filtered.length} listings found</p>
               </div>
             </div>
-            <Link to="/" className="text-sm font-medium text-primary hover:underline">Clear search</Link>
+            <Link to="/" className="text-sm font-medium text-primary hover:underline">Clear</Link>
+          </div>
+        )}
+
+        {/* Popular Categories */}
+        {categories.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold tracking-tight">Popular Categories</h3>
+              <Link to="/sell" className="text-xs text-muted-foreground hover:text-foreground">Sell something →</Link>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+              <Link
+                to="/"
+                className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent"}`}
+              >
+                All
+              </Link>
+              {categories.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/?category=${encodeURIComponent(c.slug)}`}
+                  className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${activeCategory === c.slug ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-accent"}`}
+                >
+                  <span>{c.icon}</span> {c.name}
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl md:text-2xl font-display font-bold tracking-tight">
-            {query ? "Search results" : "Latest Listings"}
+            {query || activeCategory ? "Search results" : "Latest Listings"}
           </h2>
           <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -124,7 +148,7 @@ export function HomePage() {
         </div>
 
         {loading && <ProductGrid listings={[]} loading />}
-        {!loading && error && <ErrorState message={error} />}
+        {!loading && error && <ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} />}
         {!loading && !error && <ProductGrid listings={filtered} />}
 
         {!loading && !error && filtered.length > 0 && (

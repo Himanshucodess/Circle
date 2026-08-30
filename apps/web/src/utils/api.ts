@@ -14,14 +14,16 @@ export class ApiClientError extends Error {
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };
 
   let response: Response;
   try {
-    response = await fetch(path, { ...options, headers });
+    response = await fetch(path, { ...options, headers, credentials: "include" });
   } catch (e) {
     throw new ApiClientError(0, "NETWORK_ERROR", "Unable to reach the server. Please try again.");
   }

@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Search, ShoppingBag, Store, Shield } from "lucide-react"
+import { Search, ShoppingBag, Store, LogOut, User } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { Input } from "@/components/ui/Input"
+import { useAuth } from "@/context/AuthContext"
 
 export function Header() {
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const [query, setQuery] = useState("")
 
   const onSearch = (e: React.FormEvent) => {
@@ -45,9 +46,8 @@ export function Header() {
         </form>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link to="/admin" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-2 rounded-full hover:bg-accent transition-colors">
-            <Shield className="w-4 h-4" />
-            Admin
+          <Link to="/" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground px-3 py-2 rounded-full hover:bg-accent transition-colors">
+            Browse
           </Link>
           <Link to="/sell">
             <Button className="rounded-full shadow-sm hover:shadow-md transition-shadow">
@@ -55,6 +55,24 @@ export function Header() {
               Sell
             </Button>
           </Link>
+          {user ? (
+            <div className="flex items-center gap-2 ml-1">
+              <img src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`} alt={user.name || "user"} className="w-8 h-8 rounded-full border object-cover" />
+              <span className="hidden lg:block text-sm font-medium max-w-[120px] truncate">{user.name || user.email}</span>
+              <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={logout} title="Sign out">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <Link to="/login">
+              <Button variant="outline" className="rounded-full hidden sm:inline-flex">
+                <User className="w-4 h-4" /> Sign in
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full sm:hidden">
+                <User className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

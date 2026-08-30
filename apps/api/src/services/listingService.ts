@@ -19,6 +19,8 @@ function toDto(listing: any) {
     price: listing.price,
     condition: listing.condition,
     location: listing.location,
+    viewCount: listing.viewCount ?? 0,
+    offerCount: listing._count?.offers ?? listing.offerCount ?? 0,
     attributes: listing.attributes,
     category: {
       id: listing.category.id,
@@ -32,16 +34,38 @@ function toDto(listing: any) {
   };
 }
 
-export async function getListings(limit?: number) {
-  const rows = await listingRepo.listRecent(limit);
+export async function getListings(limit?: number, opts?: { search?: string; category?: string }) {
+  const rows = await listingRepo.listRecent(limit, { search: opts?.search, categorySlug: opts?.category });
   return rows.map(toDto);
 }
 
 export async function getListing(id: string) {
+  // Increment view count (simple, not deduped per user for assignment scope)
+  try {
+    await listingRepo.incrementViewCount(id);
+  } catch (_) {
+    // ignore if fails
+  }
   const listing = await listingRepo.findById(id);
   if (!listing) throw ApiError.notFound("Listing not found");
 
-  const dto = toDto(listing);
+  const dto: any = toDto(listing);
+  // viewCount was just incremented, reflect +1 if we didn't refetch
+  dto.viewCount = (listing.viewCount ?? 0) + 1;
+
+  // Offer count and recent offers
+  try {
+    const offerCount = await listingRepo.countOffers(id);
+    dto.offerCount = offerCount;
+    const offers = await (await import("../repositories/offerRepository")).listByListing(id);
+    dto.offers = offers.slice(0, 5);
+  } catch {}
+
+  // Pricing insight
+  try {
+    const pricing = await (await import("./pricingService")).getPricingInsight(listing.price, listing.categoryId, listing.id);
+    dto.pricingInsight = pricing;
+  } catch {}
 
   // Load the schema snapshot referenced by this listing so we can render
   // its attributes dynamically (old versions remain compatible).
@@ -49,23 +73,22 @@ export async function getListing(id: string) {
     const schemaVersion = await schemaRepo.findById(listing.schemaVersionId);
     if (schemaVersion) {
       const snapshot = schemaVersion.schemaJson as unknown as { fields: SchemaField[] };
-      (dto as any)["schema"] = {
+      dto.schema = {
         fields: snapshot.fields ?? [],
       };
     }
   } else {
-    // Fallback: use latest published schema
     const latest = await schemaRepo.latestPublished(listing.categoryId);
     if (latest) {
       const snapshot = latest.schemaJson as unknown as { fields: SchemaField[] };
-      (dto as any)["schema"] = { fields: snapshot.fields ?? [] };
+      dto.schema = { fields: snapshot.fields ?? [] };
     }
   }
 
   return dto as any;
 }
 
-export async function createListing(body: unknown) {
+export async function createListing(body: unknown, sellerId?: string | null) {
   const parsed = createListingSchema.safeParse(body);
   if (!parsed.success) {
     const fields: Record<string, string> = {};
@@ -103,6 +126,7 @@ export async function createListing(body: unknown) {
   const listing = await listingRepo.create({
     categoryId: category.id,
     schemaVersionId: latestSchema.id,
+    sellerId: sellerId || null,
     title: data.title,
     description: data.description,
     price: data.price,

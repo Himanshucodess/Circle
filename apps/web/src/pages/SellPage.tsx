@@ -139,7 +139,7 @@ export function SellPage() {
   }
 
   if (loading) return <div className="max-w-3xl mx-auto px-4 py-10"><PageLoader label="Loading categories..." /></div>
-  if (error) return <div className="max-w-3xl mx-auto px-4 py-10"><ErrorState message={error} /></div>
+  if (error) return <div className="max-w-3xl mx-auto px-4 py-10"><ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} /></div>
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">

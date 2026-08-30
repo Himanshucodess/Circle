@@ -4,11 +4,14 @@ import { Footer } from "@/components/layout/Footer";
 import { HomePage } from "@/pages/HomePage";
 import { SellPage } from "@/pages/SellPage";
 import { ProductDetailPage } from "@/pages/ProductDetailPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { AuthCallbackPage } from "@/pages/AuthCallbackPage";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { CategoriesPage } from "@/pages/admin/CategoriesPage";
 import { CategoryEditorPage } from "@/pages/admin/CategoryEditorPage";
 import { FieldsPage } from "@/pages/admin/FieldsPage";
 import { FieldEditorPage } from "@/pages/admin/FieldEditorPage";
+import { AuthProvider } from "@/context/AuthContext";
 
 function PublicLayout() {
   return (
@@ -24,20 +27,24 @@ function PublicLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/sell" element={<SellPage />} />
-          <Route path="/products/:id" element={<ProductDetailPage />} />
-        </Route>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/categories" element={<CategoriesPage />} />
-        <Route path="/admin/categories/:id" element={<CategoryEditorPage />} />
-        <Route path="/admin/fields" element={<FieldsPage />} />
-        <Route path="/admin/fields/new" element={<FieldEditorPage />} />
-        <Route path="/admin/fields/:id" element={<FieldEditorPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/sell" element={<SellPage />} />
+            <Route path="/products/:id" element={<ProductDetailPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          </Route>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/categories" element={<CategoriesPage />} />
+          <Route path="/admin/categories/:id" element={<CategoryEditorPage />} />
+          <Route path="/admin/fields" element={<FieldsPage />} />
+          <Route path="/admin/fields/new" element={<FieldEditorPage />} />
+          <Route path="/admin/fields/:id" element={<FieldEditorPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

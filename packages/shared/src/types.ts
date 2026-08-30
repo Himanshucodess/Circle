@@ -106,6 +106,8 @@ export interface ListingDto {
   price: number;
   condition: string;
   location: string;
+  viewCount: number;
+  offerCount?: number;
   attributes: Record<string, unknown>;
   category: {
     id: string;
@@ -116,6 +118,27 @@ export interface ListingDto {
   schemaVersion: number | null;
   images: { id: string; url: string; displayOrder: number }[];
   createdAt: string;
+  offers?: OfferDto[];
+  pricingInsight?: PricingInsightDto;
+}
+
+export interface OfferDto {
+  id: string;
+  listingId: string;
+  amount: number;
+  message?: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface PricingInsightDto {
+  listingPrice: number;
+  medianPrice: number | null;
+  comparableCount: number;
+  differencePercent: number | null;
+  rating: "EXCELLENT" | "GOOD" | "COMPETITIVE" | "HIGH" | "TOO_HIGH" | "NO_DATA";
+  message: string;
+  range?: { min: number; max: number };
 }
 
 export interface ApiSuccess<T> {

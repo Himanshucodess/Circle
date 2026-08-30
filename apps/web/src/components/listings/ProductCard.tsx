@@ -54,6 +54,13 @@ export function ProductCard({ listing }: { listing: ListingDto }) {
             {listing.location}
           </span>
         </div>
+        {(listing.viewCount !== undefined || listing.offerCount !== undefined) && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><Eye className="w-3 h-3" /> {listing.viewCount ?? 0} views</span>
+            <span>·</span>
+            <span>{listing.offerCount ?? 0} offers</span>
+          </div>
+        )}
       </div>
     </Link>
   )

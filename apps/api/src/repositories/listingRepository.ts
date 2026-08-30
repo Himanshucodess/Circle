@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 export interface CreateListingInput {
   categoryId: string;
   schemaVersionId: string | null;
+  sellerId?: string | null;
   title: string;
   description: string;
   price: number;
@@ -17,6 +18,7 @@ export async function create(data: CreateListingInput) {
     data: {
       categoryId: data.categoryId,
       schemaVersionId: data.schemaVersionId,
+      sellerId: data.sellerId,
       title: data.title,
       description: data.description,
       price: data.price,
@@ -49,18 +51,54 @@ export async function findById(id: string) {
   });
 }
 
-export async function listRecent(limit = 12) {
+export async function listRecent(limit = 12, opts?: { search?: string; categorySlug?: string }) {
+  const where: any = {};
+  if (opts?.search) {
+    const s = opts.search;
+    where.OR = [
+      { title: { contains: s, mode: "insensitive" } },
+      { description: { contains: s, mode: "insensitive" } },
+    ];
+  }
+  if (opts?.categorySlug) {
+    where.category = { slug: opts.categorySlug };
+  }
   return prisma.listing.findMany({
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { createdAt: "desc" },
     take: limit,
     include: {
       category: true,
       images: { orderBy: { displayOrder: "asc" } },
       schema: { select: { version: true } },
+      _count: { select: { offers: true } },
     },
   });
 }
 
 export async function countAll() {
   return prisma.listing.count();
+}
+
+export async function incrementViewCount(id: string) {
+  return prisma.listing.update({
+    where: { id },
+    data: { viewCount: { increment: 1 } },
+  });
+}
+
+export async function findComparableByCategory(categoryId: string, excludeId?: string) {
+  return prisma.listing.findMany({
+    where: {
+      categoryId,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { price: true },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+}
+
+export async function countOffers(listingId: string) {
+  return prisma.offer.count({ where: { listingId } });
 }

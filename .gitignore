@@ -3,8 +3,10 @@ dist
 .env
 .DS_Store
 coverage
-prisma/migrations
 apps/api/dist
 apps/web/dist
 packages/shared/dist
 *.log
+*.tsbuildinfo
+prisma/*.db
+prisma/*.db-journal

@@ -195,6 +195,81 @@ async function main() {
         ],
       },
     },
+    frame_size: {
+      key: "frame_size",
+      label: "Frame Size",
+      type: FIELD_TYPES.SELECT,
+      description: "Frame size of the bicycle.",
+      config: {
+        required: true,
+        options: [
+          { label: "Small", value: "S" },
+          { label: "Medium", value: "M" },
+          { label: "Large", value: "L" },
+          { label: "Extra Large", value: "XL" },
+        ],
+      },
+    },
+    wheel_size: {
+      key: "wheel_size",
+      label: "Wheel Size",
+      type: FIELD_TYPES.SELECT,
+      description: "Wheel diameter.",
+      config: {
+        required: true,
+        options: [
+          { label: "26 inch", value: "26" },
+          { label: "27.5 inch", value: "27.5" },
+          { label: "29 inch", value: "29" },
+        ],
+      },
+    },
+    gear_count: {
+      key: "gear_count",
+      label: "Gear Count",
+      type: FIELD_TYPES.NUMBER,
+      description: "Number of gears.",
+      config: { required: true, min: 1, max: 30, placeholder: "e.g. 21" },
+    },
+    frame_material: {
+      key: "frame_material",
+      label: "Frame Material",
+      type: FIELD_TYPES.SELECT,
+      description: "Material of the bicycle frame.",
+      config: {
+        required: true,
+        options: [
+          { label: "Aluminum", value: "aluminum" },
+          { label: "Carbon", value: "carbon" },
+          { label: "Steel", value: "steel" },
+          { label: "Titanium", value: "titanium" },
+        ],
+      },
+    },
+    brake_type: {
+      key: "brake_type",
+      label: "Brake Type",
+      type: FIELD_TYPES.SELECT,
+      config: {
+        options: [
+          { label: "Disc", value: "disc" },
+          { label: "Rim", value: "rim" },
+          { label: "Drum", value: "drum" },
+        ],
+      },
+    },
+    suspension: {
+      key: "suspension",
+      label: "Suspension",
+      type: FIELD_TYPES.RADIO,
+      config: {
+        options: [
+          { label: "Full", value: "full" },
+          { label: "Hardtail", value: "hardtail" },
+          { label: "Rigid", value: "rigid" },
+        ],
+      },
+    },
   };
 
   const fieldMap: Record<string, string> = {};
@@ -248,6 +323,21 @@ async function main() {
         { key: "petFriendly" },
         { key: "dimensions" },
         { key: "color" },
+      ],
+    },
+    {
+      name: "Bicycle",
+      slug: "bicycle",
+      description: "Secondhand bicycles and cycles.",
+      icon: "🚲",
+      fields: [
+        { key: "brand", required: true },
+        { key: "frame_size", required: true },
+        { key: "wheel_size", required: true },
+        { key: "gear_count", required: true },
+        { key: "frame_material", required: true },
+        { key: "brake_type" },
+        { key: "suspension" },
       ],
     },
   ];
@@ -404,11 +494,18 @@ async function seedListings(fieldMap: Record<string, string>) {
     sofa2: [
       "https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?w=600&q=80",
     ],
+    bicycle1: [
+      "https://images.unsplash.com/photo-1484156818044-c040038b0719?w=600&q=80",
+    ],
+    bicycle2: [
+      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80",
+    ],
   };
 
   const mobile = await getPublished(fieldMap, "mobile-phone");
   const laptop = await getPublished(fieldMap, "laptop");
   const sofa = await getPublished(fieldMap, "sofa");
+  const bicycle = await getPublished(fieldMap, "bicycle");
 
   const listings = [
     {
@@ -548,6 +645,44 @@ async function seedListings(fieldMap: Record<string, string>) {
         color: "brown",
       },
       images: images.sofa2,
+    },
+    {
+      categoryId: bicycle.category.id,
+      schemaVersionId: bicycle.schema.id,
+      title: "Trek Marlin 7 - Medium",
+      description: "Well-maintained Trek Marlin 7 mountain bike, 21 gears, aluminum frame, disc brakes. Perfect for trails and city rides.",
+      price: 28000,
+      condition: "USED",
+      location: "Pune",
+      attributes: {
+        brand: "Trek",
+        frame_size: "M",
+        wheel_size: "27.5",
+        gear_count: 21,
+        frame_material: "aluminum",
+        brake_type: "disc",
+        suspension: "hardtail",
+      },
+      images: images.bicycle1,
+    },
+    {
+      categoryId: bicycle.category.id,
+      schemaVersionId: bicycle.schema.id,
+      title: "Giant Escape 3 - Large",
+      description: "Giant Escape hybrid bicycle, lightweight, 24 gears, ideal for commuting and fitness.",
+      price: 22000,
+      condition: "LIKE_NEW",
+      location: "Bengaluru",
+      attributes: {
+        brand: "Giant",
+        frame_size: "L",
+        wheel_size: "29",
+        gear_count: 24,
+        frame_material: "aluminum",
+        brake_type: "rim",
+        suspension: "rigid",
+      },
+      images: images.bicycle2,
     },
   ];
 

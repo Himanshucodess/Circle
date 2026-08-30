@@ -68,7 +68,7 @@ export function AdminDashboard() {
       </div>
 
       {loading && <PageLoader label="Loading dashboard..." />}
-      {!loading && error && <ErrorState message={error} />}
+      {!loading && error && <ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} />}
       {!loading && !error && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
