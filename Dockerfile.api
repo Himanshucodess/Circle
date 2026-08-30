@@ -1,4 +1,8 @@
-FROM node:20-alpine AS build
+FROM node:20-bookworm-slim AS build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -13,7 +17,11 @@ COPY packages/shared ./packages/shared
 RUN npx prisma generate
 RUN npm run build -w @marketplace/shared && npm run build -w @marketplace/api
 
-FROM node:20-alpine
+FROM node:20-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 ENV NODE_ENV=production
@@ -23,8 +31,8 @@ COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/src ./packages/shared/src
 COPY --from=build /app/prisma ./prisma
 
 EXPOSE 4000
 CMD ["node", "apps/api/dist/server.js"]
-
