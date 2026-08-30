@@ -136,7 +136,7 @@ export function HomePage() {
         {!loading && !error && <ProductGrid listings={listings} />}
 
         {!loading && !error && listings.length > 0 && (
-          <div className="mt-10 rounded-2xl border bg-gradient-to-r from-indigo-50 to-violet-50 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="mt-10 rounded-2xl border bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/50 dark:to-violet-950/50 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="font-semibold">Got something to sell?</h3>
               <p className="text-sm text-muted-foreground">Turn your unused items into cash in under 2 minutes.</p>
