@@ -121,7 +121,7 @@ jobs:
         shell: bash
         run: |
           ssh -i "$HOME/.ssh/circlestore.pem" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd '$DEPLOY_PATH' && test -f .env && sudo docker compose -f docker-compose.prod.yml up -d --build --wait"
+            "cd '$DEPLOY_PATH' && test -f .env && sudo docker compose -f docker-compose.prod.yml up -d --build --force-recreate --wait"
 
       - name: Migrate database
         run: |
