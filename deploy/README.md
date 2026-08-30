@@ -11,6 +11,9 @@ Add these GitHub Actions secrets:
 - `EC2_USER`: `ubuntu`
 - `EC2_SSH_KEY`: the complete contents of the EC2 private key
 
+If GitHub changes the PEM line breaks, add `EC2_SSH_KEY_B64` instead with the
+base64-encoded PEM contents. The workflow supports either form.
+
 The EC2 host must already have Docker, Docker Compose, and `/home/ubuntu/circlestore/.env`.
 The `.env` file must contain the Clerk keys and `VITE_CLERK_PUBLISHABLE_KEY`;
 it is never transferred to GitHub or committed to the repository.

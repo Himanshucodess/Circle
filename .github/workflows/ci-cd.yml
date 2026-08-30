@@ -87,10 +87,17 @@ jobs:
         shell: bash
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_SSH_KEY_B64: ${{ secrets.EC2_SSH_KEY_B64 }}
         run: |
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-          printf '%s\n' "$EC2_SSH_KEY" > "$HOME/.ssh/circlestore.pem"
+          if [ -n "$EC2_SSH_KEY_B64" ]; then
+            printf '%s' "$EC2_SSH_KEY_B64" | base64 --decode > "$HOME/.ssh/circlestore.pem"
+          else
+            key="${EC2_SSH_KEY//$'\r'/}"
+            key="${key//\\n/$'\n'}"
+            printf '%s\n' "$key" > "$HOME/.ssh/circlestore.pem"
+          fi
           chmod 600 "$HOME/.ssh/circlestore.pem"
           test -s "$HOME/.ssh/circlestore.pem"
           ssh-keygen -y -f "$HOME/.ssh/circlestore.pem" > /dev/null
