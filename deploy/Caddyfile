@@ -1,0 +1,13 @@
+# Caddy automatically provisions and renews HTTPS for this hostname.
+circle.lightchan.online {
+    encode gzip
+
+    @api path /api/*
+    handle @api {
+        reverse_proxy api:4000
+    }
+
+    handle {
+        reverse_proxy web:80
+    }
+}
