@@ -53,6 +53,9 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Build shared package
+        run: npm run build -w @marketplace/shared
+
       - name: Apply test schema
         run: npx prisma migrate deploy
 
