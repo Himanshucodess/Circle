@@ -24,6 +24,8 @@ services:
     env_file:
       - .env
     environment:
+      # Cloudinary credentials are read from the server-only .env and are
+      # passed to this API container only. The web service has no env_file.
       DATABASE_URL: postgresql://marketplace:marketplace@db:5432/marketplace?schema=public
       FRONTEND_URL: https://circle.lightchan.online
       NODE_ENV: production

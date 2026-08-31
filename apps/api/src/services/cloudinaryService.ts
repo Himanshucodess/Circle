@@ -3,6 +3,15 @@ import { ApiError } from "../utils/ApiError";
 
 let configured = false;
 
+export function getConfigurationStatus() {
+  return {
+    CLOUDINARY_CLOUD_NAME: Boolean(process.env.CLOUDINARY_CLOUD_NAME),
+    CLOUDINARY_API_KEY: Boolean(process.env.CLOUDINARY_API_KEY),
+    CLOUDINARY_API_SECRET: Boolean(process.env.CLOUDINARY_API_SECRET),
+    CLOUDINARY_URL: Boolean(process.env.CLOUDINARY_URL),
+  };
+}
+
 function configure() {
   if (configured) return;
   const cloudinaryUrl = process.env.CLOUDINARY_URL;
