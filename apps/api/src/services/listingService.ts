@@ -200,6 +200,28 @@ export async function getSellerListings(sellerId: string) {
   return (await listingRepo.listBySeller(sellerId)).map(toDto);
 }
 
+export async function deleteListing(listingId: string, sellerId: string) {
+  const listing = await listingRepo.findById(listingId);
+  if (!listing) throw ApiError.notFound("Listing not found");
+  if (!listing.sellerId || listing.sellerId !== sellerId) {
+    throw ApiError.forbidden("You can only remove your own listings");
+  }
+
+  // Delete the database record first. ListingImage and Offer rows cascade with
+  // the listing; Cloudinary cleanup is best-effort and never blocks removal.
+  await listingRepo.deleteListing(listingId);
+  for (const image of listing.images) {
+    if (!image.publicId) continue;
+    try {
+      await cloudinaryService.deleteImage(image.publicId);
+    } catch (error) {
+      console.warn("[listing] image cleanup failed after listing removal", error);
+    }
+  }
+  await invalidateListingCaches(listingId);
+  return { removed: true };
+}
+
 export async function deleteListingImage(listingId: string, imageId: string, sellerId: string) {
   const image = await listingRepo.findImage(imageId);
   if (!image || image.listingId !== listingId) throw ApiError.notFound("Listing image not found");

@@ -8,6 +8,7 @@ const router = Router();
 router.get("/", c.listListings);
 router.post("/", authenticateRequired as any, c.createListing);
 router.get("/mine", authenticateRequired as any, c.myListings);
+router.delete("/:id", authenticateRequired as any, c.deleteListing);
 router.post("/:id/view", c.recordView);
 router.get("/:id", c.getListing);
 router.get("/:id/offer-competitiveness", o.competitiveness);

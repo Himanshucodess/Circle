@@ -136,3 +136,7 @@ export async function deleteImage(id: string) {
 export async function reorderImages(listingId: string, imageIds: string[]) {
   await prisma.$transaction(imageIds.map((id, index) => prisma.listingImage.update({ where: { id }, data: { displayOrder: index } })));
 }
+
+export async function deleteListing(id: string) {
+  return prisma.listing.delete({ where: { id } });
+}

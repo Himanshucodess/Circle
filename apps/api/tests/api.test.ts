@@ -147,6 +147,22 @@ describe("Marketplace Dynamic Listing API", () => {
     });
     expect(res.status).toBe(201);
     expect(res.body.data.attributes[fieldKeyA]).toBe("hello");
+
+    const otherSeller = await createOrUpdateClerk({ clerkId: `other_${Date.now()}`, email: `other_${Date.now()}@example.com`, name: "Other Seller" });
+    const otherToken = signToken(otherSeller);
+    const forbidden = await request(app)
+      .delete(`/api/listings/${res.body.data.id}`)
+      .set("Authorization", `Bearer ${otherToken}`);
+    expect(forbidden.status).toBe(403);
+
+    const removed = await request(app)
+      .delete(`/api/listings/${res.body.data.id}`)
+      .set("Authorization", `Bearer ${sellerToken}`);
+    expect(removed.status).toBe(200);
+    expect(removed.body.data.removed).toBe(true);
+
+    const missing = await request(app).get(`/api/listings/${res.body.data.id}`);
+    expect(missing.status).toBe(404);
   });
 
   it("does not accept a photo upload owned by another seller", async () => {

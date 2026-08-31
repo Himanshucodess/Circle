@@ -29,6 +29,10 @@ export const myListings = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await listingService.getSellerListings((req as any).user.id) });
 });
 
+export const deleteListing = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await listingService.deleteListing(req.params.id, (req as any).user.id) });
+});
+
 export const deleteListingImage = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await listingService.deleteListingImage(req.params.id, req.params.imageId, (req as any).user.id) });
 });

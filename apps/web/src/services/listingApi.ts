@@ -74,3 +74,7 @@ export async function recordListingView(id: string) {
 export async function fetchMyListings() {
   return apiFetch<ListingDto[]>("/api/listings/mine");
 }
+
+export async function deleteListing(id: string) {
+  return apiFetch<{ removed: boolean }>(`/api/listings/${id}`, { method: "DELETE" });
+}

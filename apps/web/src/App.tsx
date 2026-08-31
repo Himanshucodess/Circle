@@ -17,6 +17,7 @@ import { ClerkAuthProvider } from "@/context/ClerkAuthContext";
 import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import { AdminGate } from "@/pages/admin/AdminGate";
 import { RequestsPage } from "@/pages/admin/RequestsPage";
+import { MyListingsPage } from "@/pages/MyListingsPage";
 
 function PublicLayout() {
   return (
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/sell" element={<SellPage />} />
+          <Route path="/my-listings" element={<MyListingsPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
