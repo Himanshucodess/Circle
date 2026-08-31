@@ -8,6 +8,7 @@ import {
   updateCategoryFieldSchema,
   reorderFieldsSchema,
 } from "../validators";
+import { invalidateCategoryCaches } from "../infrastructure/cache/cacheInvalidation";
 
 async function assertCategory(categoryId: string) {
   const category = await categoryRepo.findById(categoryId);
@@ -26,6 +27,7 @@ export const attachField = asyncHandler(async (req: Request, res: Response) => {
   const parsed = attachFieldSchema.safeParse(req.body);
   if (!parsed.success) throw ApiError.badRequest("VALIDATION_ERROR", "Validation failed", {});
   const field = await categoryFieldRepo.attach(req.params.id, parsed.data as any);
+  await invalidateCategoryCaches(req.params.id);
   res.status(201).json({ success: true, data: field });
 });
 
@@ -34,12 +36,14 @@ export const updateCategoryField = asyncHandler(async (req: Request, res: Respon
   const parsed = updateCategoryFieldSchema.safeParse(req.body);
   if (!parsed.success) throw ApiError.badRequest("VALIDATION_ERROR", "Validation failed", {});
   const field = await categoryFieldRepo.update(req.params.id, req.params.fieldId, parsed.data as any);
+  await invalidateCategoryCaches(req.params.id);
   res.json({ success: true, data: field });
 });
 
 export const removeCategoryField = asyncHandler(async (req: Request, res: Response) => {
   await assertCategory(req.params.id);
   const field = await categoryFieldRepo.remove(req.params.id, req.params.fieldId);
+  await invalidateCategoryCaches(req.params.id);
   res.json({ success: true, data: field });
 });
 
@@ -48,5 +52,6 @@ export const reorderCategoryFields = asyncHandler(async (req: Request, res: Resp
   const parsed = reorderFieldsSchema.safeParse(req.body);
   if (!parsed.success) throw ApiError.badRequest("VALIDATION_ERROR", "Validation failed", {});
   const fields = await categoryFieldRepo.reorder(req.params.id, parsed.data.fieldIds);
+  await invalidateCategoryCaches(req.params.id);
   res.json({ success: true, data: fields });
 });

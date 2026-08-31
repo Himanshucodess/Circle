@@ -13,6 +13,8 @@ import authRouter from "./routes/auth";
 import adminAuthRouter from "./routes/adminAuth";
 import categoryRequestsRouter from "./routes/categoryRequests";
 import uploadsRouter from "./routes/uploads";
+import { cacheService } from "./infrastructure/cache/cacheService";
+import prisma from "./lib/prisma";
 
 export function createApp() {
   const app = express();
@@ -77,8 +79,18 @@ export function createApp() {
   // Global optional auth — populates req.user from Clerk (if present) or JWT/demo
   app.use(authenticateOptional as any);
 
-  app.get("/api/health", (req, res) => {
-    res.json({ success: true, data: { status: "ok" } });
+  app.get("/api/health", async (_req, res) => {
+    const [redisHealthy, databaseHealthy] = await Promise.all([
+      cacheService.isHealthy(),
+      prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        status: databaseHealthy ? "ok" : "degraded",
+        services: { database: databaseHealthy ? "healthy" : "unavailable", redis: redisHealthy ? "healthy" : "unavailable" },
+      },
+    });
   });
 
   app.use("/api/auth", authRouter);

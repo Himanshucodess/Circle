@@ -15,6 +15,19 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7-alpine
+    container_name: circlestore-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - circlestore_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   api:
     build:
       context: .
@@ -30,12 +43,16 @@ services:
       FRONTEND_URL: https://circle.lightchan.online
       NODE_ENV: production
       PORT: 4000
+      REDIS_URL: redis://redis:6379
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        # The API must still start and fall back to PostgreSQL if Redis is down.
+        condition: service_started
     expose:
       - "4000"
     healthcheck:
@@ -75,5 +92,6 @@ services:
 
 volumes:
   circlestore_db_data:
+  circlestore_redis_data:
   circlestore_caddy_data:
   circlestore_caddy_config:

@@ -1,6 +1,7 @@
 import * as offerRepo from "../repositories/offerRepository";
 import * as listingRepo from "../repositories/listingRepository";
 import { ApiError } from "../utils/ApiError";
+import { invalidateListingCaches } from "../infrastructure/cache/cacheInvalidation";
 
 export type OfferRating = "LOW" | "MODERATE" | "COMPETITIVE" | "EXCELLENT";
 const messages: Record<OfferRating, string> = {
@@ -39,7 +40,9 @@ export async function createOffer(listingId: string, body: { amount: number; mes
   }
 
   const offer = await offerRepo.create({ listingId, amount: Math.round(amount), message: body.message?.trim() || null, bidderId });
-  return { ...offer, competitiveness: await getOfferCompetitiveness(listingId, amount) };
+  const competitiveness = await getOfferCompetitiveness(listingId, amount);
+  await invalidateListingCaches(listingId);
+  return { ...offer, competitiveness };
 }
 
 export async function getOffers(listingId: string, userId: string) {
@@ -54,5 +57,7 @@ export async function updateOfferStatus(offerId: string, status: string) {
   if (!allowed.includes(status)) throw ApiError.badRequest("VALIDATION_ERROR", "Invalid status");
   const offer = await offerRepo.findById(offerId);
   if (!offer) throw ApiError.notFound("Offer not found");
-  return offerRepo.updateStatus(offerId, status);
+  const updated = await offerRepo.updateStatus(offerId, status);
+  await invalidateListingCaches(offer.listingId);
+  return updated;
 }

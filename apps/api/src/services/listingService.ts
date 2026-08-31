@@ -7,6 +7,9 @@ import { createListingSchema } from "../validators";
 import { SchemaField } from "@marketplace/shared";
 import * as imageUploadRepo from "../repositories/imageUploadRepository";
 import * as cloudinaryService from "./cloudinaryService";
+import { CACHE_TTL, cacheKeys } from "../infrastructure/cache/cacheKeys";
+import { cacheService } from "../infrastructure/cache/cacheService";
+import { invalidateListingCaches } from "../infrastructure/cache/cacheInvalidation";
 
 function toDto(listing: any) {
   const images = (listing.images ?? []).map((img: any) => ({
@@ -39,11 +42,28 @@ function toDto(listing: any) {
 }
 
 export async function getListings(limit?: number, opts?: { search?: string; category?: string }) {
-  const rows = await listingRepo.listRecent(limit, { search: opts?.search, categorySlug: opts?.category });
-  return rows.map(toDto);
+  const effectiveLimit = limit ?? 12;
+  const cacheKey = !opts?.search
+    ? opts?.category
+      ? cacheKeys.categoryListings(opts.category, effectiveLimit)
+      : cacheKeys.latestListings(effectiveLimit)
+    : null;
+  if (cacheKey) {
+    const cached = await cacheService.get<any[]>(cacheKey);
+    if (cached) return cached;
+  }
+
+  const rows = await listingRepo.listRecent(effectiveLimit, { search: opts?.search, categorySlug: opts?.category });
+  const listings = rows.map(toDto);
+  if (cacheKey) await cacheService.set(cacheKey, listings, CACHE_TTL.LISTINGS);
+  return listings;
 }
 
 export async function getListing(id: string) {
+  const cacheKey = cacheKeys.listing(id);
+  const cached = await cacheService.get<any>(cacheKey);
+  if (cached) return cached;
+
   const listing = await listingRepo.findById(id);
   if (!listing) throw ApiError.notFound("Listing not found");
 
@@ -57,7 +77,12 @@ export async function getListing(id: string) {
 
   // Pricing insight
   try {
-    const pricing = await (await import("./pricingService")).getPricingInsight(listing.price, listing.categoryId, listing.id);
+    const pricingKey = cacheKeys.pricing(listing.id);
+    let pricing = await cacheService.get<any>(pricingKey);
+    if (!pricing) {
+      pricing = await (await import("./pricingService")).getPricingInsight(listing.price, listing.categoryId, listing.id);
+      await cacheService.set(pricingKey, pricing, CACHE_TTL.PRICING);
+    }
     dto.pricingInsight = { ...pricing, medianPrice: undefined, range: undefined };
   } catch {}
 
@@ -79,6 +104,7 @@ export async function getListing(id: string) {
     }
   }
 
+  await cacheService.set(cacheKey, dto, CACHE_TTL.LISTINGS);
   return dto as any;
 }
 
@@ -158,6 +184,7 @@ export async function createListing(body: unknown, sellerId?: string | null) {
     throw error;
   }
 
+  await invalidateListingCaches(listing.id);
   return toDto(listing);
 }
 
@@ -165,6 +192,7 @@ export async function recordView(id: string) {
   const listing = await listingRepo.findById(id);
   if (!listing) throw ApiError.notFound("Listing not found");
   await listingRepo.incrementViewCount(id);
+  await cacheService.delete(cacheKeys.listing(id));
   return { viewCount: (listing.viewCount ?? 0) + 1 };
 }
 
@@ -180,6 +208,7 @@ export async function deleteListingImage(listingId: string, imageId: string, sel
     try { await cloudinaryService.deleteImage(image.publicId); } catch (error) { console.warn("[listing] image cleanup failed", error); }
   }
   await listingRepo.deleteImage(imageId);
+  await invalidateListingCaches(listingId);
   return { removed: true };
 }
 
@@ -192,5 +221,6 @@ export async function reorderListingImages(listingId: string, imageIds: string[]
     throw ApiError.badRequest("INVALID_IMAGE_ORDER", "Image order does not match this listing.");
   }
   await listingRepo.reorderImages(listingId, imageIds);
+  await invalidateListingCaches(listingId);
   return (await listingRepo.findById(listingId))?.images ?? [];
 }

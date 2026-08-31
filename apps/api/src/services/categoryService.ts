@@ -1,8 +1,16 @@
 import * as categoryRepo from "../repositories/categoryRepository";
 import { ApiError } from "../utils/ApiError";
+import { CACHE_TTL, cacheKeys } from "../infrastructure/cache/cacheKeys";
+import { cacheService } from "../infrastructure/cache/cacheService";
+import { invalidateCategoryCaches, invalidateListingCaches } from "../infrastructure/cache/cacheInvalidation";
 
 export async function getCategories() {
-  return categoryRepo.listActive();
+  const key = cacheKeys.activeCategories();
+  const cached = await cacheService.get<any[]>(key);
+  if (cached) return cached;
+  const categories = await categoryRepo.listActive();
+  await cacheService.set(key, categories, CACHE_TTL.CATEGORY);
+  return categories;
 }
 
 export async function getCategoriesAdmin() {
@@ -22,19 +30,27 @@ export async function getCategoryAdmin(id: string) {
 }
 
 export async function createCategory(input: any) {
-  return categoryRepo.create(input);
+  const category = await categoryRepo.create(input);
+  await invalidateCategoryCaches(category.id);
+  return category;
 }
 
 export async function updateCategory(id: string, input: any) {
   const existing = await categoryRepo.findById(id);
   if (!existing) throw ApiError.notFound("Category not found");
-  return categoryRepo.update(id, input);
+  const category = await categoryRepo.update(id, input);
+  await invalidateCategoryCaches(id);
+  await invalidateListingCaches();
+  return category;
 }
 
 export async function archiveCategory(id: string) {
   const existing = await categoryRepo.findById(id);
   if (!existing) throw ApiError.notFound("Category not found");
-  return categoryRepo.archive(id);
+  const category = await categoryRepo.archive(id);
+  await invalidateCategoryCaches(id);
+  await invalidateListingCaches();
+  return category;
 }
 
 export async function getDashboardStats() {

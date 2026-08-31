@@ -7,7 +7,7 @@ CircleStore is a schema-driven secondhand marketplace. Sellers choose from publi
 - React, Vite, TypeScript, React Hook Form, Zod
 - Express, TypeScript, Prisma, PostgreSQL
 - Clerk for marketplace users
-- Docker Compose and Caddy for production
+- Docker Compose, Redis caching, and Caddy for production
 
 ## Local setup
 
@@ -38,6 +38,23 @@ CircleStore stores seller photos in Cloudinary and stores only the secure URL, p
 6. Start the application with the commands above.
 7. Open `/sell` and upload photos through the seller flow.
 
+### Redis caching
+
+Redis is a cache-aside performance layer. PostgreSQL remains the persistent source of truth; Redis caches frequently requested public data such as active categories, published category schemas, listing feeds, and listing details. Cloudinary remains responsible for image storage.
+
+The API connects to Redis through the Docker service name `redis` using `REDIS_URL="redis://redis:6379"`. Redis uses a Docker volume for reasonable restart persistence, but cached data is disposable. If Redis is unavailable, cache reads and writes fail open and the API continues querying PostgreSQL.
+
+Cache TTLs are centralized: categories and schemas are cached for 10 minutes, listing feeds and listing details for 60 seconds, pricing insights for 5 minutes when used, and short-lived aggregate offer calculations for 30 seconds when used. Category/schema administration and listing/offer mutations invalidate the relevant caches.
+
+Redis setup:
+
+```bash
+docker compose up -d
+docker compose exec redis redis-cli ping
+```
+
+The expected response is `PONG`. When running the API directly on the host instead of inside Compose, use a host-reachable Redis URL such as `redis://localhost:6379`; the API container must use `redis://redis:6379`.
+
 ## Tests and builds
 
 ```bash
@@ -64,6 +81,30 @@ Sellers may request a category from `/sell`. Requests are reviewed at `/admin/re
 
 ## Production deployment
 
-Production uses `docker-compose.prod.yml` with PostgreSQL, API, web, and Caddy. Caddy serves `circle.lightchan.online`, proxies `/api/*` to the API container, and serves the web container for all other paths. Containers communicate through Compose service names; the API uses `db`, never `localhost`.
+Production uses `docker-compose.prod.yml` with PostgreSQL, Redis, API, web, and Caddy. Caddy serves `circle.lightchan.online`, proxies `/api/*` to the API container, and serves the web container for all other paths. Containers communicate through Compose service names; the API uses `db` and `redis`, never `localhost`.
+
+```text
+                         INTERNET
+                            |
+                            v
+                       CUSTOM DOMAIN
+                            |
+                            v
+                         CADDY
+                       HTTPS/Proxy
+                            |
+                     +------+------+
+                     |             |
+                     v             v
+                   WEB            API
+                                  |
+                         +--------+--------+
+                         |                 |
+                         v                 v
+                       REDIS           POSTGRES
+                       CACHE          SOURCE OF TRUTH
+                         |
+                    Cache-aside layer
+```
 
 Pushes to `master` run the GitHub Actions workflow. A successful CI build automatically archives tracked source to the EC2 deployment directory, rebuilds the Compose stack, applies Prisma migrations, and checks the public health endpoint. Secrets and `.env` files are excluded from Git.

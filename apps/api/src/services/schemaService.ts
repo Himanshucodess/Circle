@@ -4,6 +4,9 @@ import * as categoryRepo from "../repositories/categoryRepository";
 import { ApiError } from "../utils/ApiError";
 import { buildSchemaFields, SchemaBuildInput } from "./schemaBuilder";
 import { validateFieldConfig } from "../validators";
+import { CACHE_TTL, cacheKeys } from "../infrastructure/cache/cacheKeys";
+import { cacheService } from "../infrastructure/cache/cacheService";
+import { invalidateCategoryCaches } from "../infrastructure/cache/cacheInvalidation";
 
 function toBuildInputs(rows: any[]): SchemaBuildInput[] {
   return rows.map((cf) => ({
@@ -38,8 +41,12 @@ export async function getSellerSchema(categoryIdOrSlug: string) {
     );
   }
 
+  const key = cacheKeys.categorySchema(category.id, latest.id);
+  const cached = await cacheService.get<any>(key);
+  if (cached) return cached;
+
   const snapshot = latest.schemaJson as { fields: any[] };
-  return {
+  const schema = {
     category: {
       id: category.id,
       name: category.name,
@@ -50,6 +57,8 @@ export async function getSellerSchema(categoryIdOrSlug: string) {
     version: latest.version,
     fields: snapshot.fields ?? [],
   };
+  await cacheService.set(key, schema, CACHE_TTL.SCHEMA);
+  return schema;
 }
 
 export async function getSchemaVersionsAdmin(categoryId: string) {
@@ -119,5 +128,6 @@ export async function publishCategory(categoryId: string) {
 
   const published = await schemaRepo.publish(draft.id, categoryId);
   await categoryRepo.activate(categoryId);
+  await invalidateCategoryCaches(categoryId);
   return published;
 }
