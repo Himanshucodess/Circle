@@ -4,6 +4,11 @@ interface ProductImageProps {
   className?: string;
 }
 
+export function optimizedImageUrl(src: string, width: number) {
+  if (!src.includes("res.cloudinary.com") || !src.includes("/upload/")) return src;
+  return src.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`);
+}
+
 export function ProductImage({ src, alt, className }: ProductImageProps) {
   if (!src) {
     return (
@@ -14,5 +19,5 @@ export function ProductImage({ src, alt, className }: ProductImageProps) {
       </div>
     );
   }
-  return <img src={src} alt={alt ?? ""} className={`object-cover ${className ?? ""}`} loading="lazy" />;
+  return <img src={optimizedImageUrl(src, 700)} alt={alt ?? ""} className={`object-cover ${className ?? ""}`} loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />;
 }

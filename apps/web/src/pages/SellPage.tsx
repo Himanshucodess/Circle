@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { useCategories } from "@/hooks/useCategories"
 import { useCategorySchema } from "@/hooks/useCategorySchema"
 import { DynamicForm } from "@/components/forms/DynamicForm"
+import { ProductPhotoUploader, ProductPhoto } from "@/components/listings/ProductPhotoUploader"
 import { Input } from "@/components/ui/Input"
 import { Textarea } from "@/components/ui/Textarea"
 import { Select } from "@/components/ui/Select"
@@ -18,13 +19,14 @@ import { requestCategory } from "@/services/categoryRequestApi"
 import { useUnifiedAuth } from "@/hooks/useUnifiedAuth"
 import { CategoryDto, CategorySchema } from "@marketplace/shared"
 import { formatAttributeValue } from "@/utils/formatValue"
-import { ArrowLeft, ArrowRight, Check, Sparkles, Package, FileText, Layers, Eye, PartyPopper, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Sparkles, Package, FileText, Layers, Eye, PartyPopper, ShieldCheck, ImagePlus } from "lucide-react"
 
-type Step = "category" | "common" | "category-info" | "review" | "success"
+type Step = "category" | "common" | "photos" | "category-info" | "review" | "success"
 
 const steps: { key: Step; label: string; icon: any; desc: string }[] = [
   { key: "category", label: "Category", icon: Layers, desc: "Choose type" },
   { key: "common", label: "Details", icon: FileText, desc: "Basic info" },
+  { key: "photos", label: "Photos", icon: ImagePlus, desc: "Add photos" },
   { key: "category-info", label: "Specs", icon: Package, desc: "Product info" },
   { key: "review", label: "Review", icon: Eye, desc: "Publish" },
 ]
@@ -35,15 +37,15 @@ interface CommonForm {
   price: number
   condition: string
   location: string
-  imageUrl: string
 }
 
 const stepIndex: Record<Step, number> = {
   category: 0,
   common: 1,
-  "category-info": 2,
-  review: 3,
-  success: 4,
+  photos: 2,
+  "category-info": 3,
+  review: 4,
+  success: 5,
 }
 
 export function SellPage() {
@@ -52,6 +54,9 @@ export function SellPage() {
   const [category, setCategory] = useState<CategoryDto | null>(null)
   const [attributes, setAttributes] = useState<Record<string, unknown>>({})
   const [common, setCommon] = useState<CommonForm | null>(null)
+  const [photos, setPhotos] = useState<ProductPhoto[]>([])
+  const [photosUploading, setPhotosUploading] = useState(false)
+  const [photosReady, setPhotosReady] = useState(false)
   const [listingId, setListingId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -66,7 +71,7 @@ export function SellPage() {
 
   const commonForm = useForm<CommonForm>({
     mode: "onTouched",
-    defaultValues: common ?? { title: "", description: "", price: 0, condition: "", location: "", imageUrl: "" },
+    defaultValues: common ?? { title: "", description: "", price: 0, condition: "", location: "" },
   })
 
   const selectCategory = (c: CategoryDto) => {
@@ -77,7 +82,7 @@ export function SellPage() {
 
   const onCommonSubmit = (values: CommonForm) => {
     setCommon(values)
-    setStep("category-info")
+    setStep("photos")
   }
 
   const onAttributesSubmit = (vals: Record<string, unknown>) => {
@@ -91,7 +96,6 @@ export function SellPage() {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const images = common.imageUrl ? [{ url: common.imageUrl, displayOrder: 0 }] : []
       const listing = await createListing({
         categoryId: category.id,
         title: common.title,
@@ -99,7 +103,7 @@ export function SellPage() {
         price: Number(common.price),
         condition: common.condition,
         location: common.location,
-        images,
+        images: photos.map((photo, displayOrder) => ({ url: photo.url, publicId: photo.publicId, uploadId: photo.id, displayOrder })),
         attributes,
       })
       setListingId(listing.id)
@@ -129,7 +133,7 @@ export function SellPage() {
         <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
           <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
-        <ol className="mt-4 grid grid-cols-4 gap-2">
+        <ol className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
           {steps.map((s, i) => {
             const active = i === current
             const done = i < current
@@ -272,14 +276,6 @@ export function SellPage() {
                   error={commonForm.formState.errors.location?.message}
                   {...commonForm.register("location", { required: "Location is required" })}
                 />
-                <Input
-                  label="Image URL"
-                  id="imageUrl"
-                  placeholder="https://…"
-                  hint="Paste a direct image link. Sellers get better views with a clear photo."
-                  {...commonForm.register("imageUrl")}
-                />
-
                 <div className="flex justify-end pt-2">
                   <Button type="submit" className="rounded-full px-6">
                     Continue <ArrowRight className="w-4 h-4" />
@@ -291,9 +287,24 @@ export function SellPage() {
         </section>
       )}
 
+      {step === "photos" && (
+        <section>
+          <Button variant="ghost" size="sm" onClick={() => setStep("common")} className="mb-4 -ml-2" disabled={photosUploading}>
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+          <ProductPhotoUploader value={photos} onChange={setPhotos} onUploadingChange={setPhotosUploading} onReadyChange={setPhotosReady} />
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-sm text-muted-foreground">At least one clear photo is required.</p>
+            <Button className="rounded-full px-6" disabled={!photosReady || photosUploading} onClick={() => setStep("category-info")}>
+              Continue <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </section>
+      )}
+
       {step === "category-info" && category && (
         <section>
-          <Button variant="ghost" size="sm" onClick={() => setStep("common")} className="mb-4 -ml-2">
+          <Button variant="ghost" size="sm" onClick={() => setStep("photos")} className="mb-4 -ml-2">
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
           <Card>
@@ -330,6 +341,7 @@ export function SellPage() {
           category={category}
           schema={schema}
           common={common}
+          photos={photos}
           attributes={attributes}
           submitting={submitting}
           error={submitError}
@@ -346,6 +358,8 @@ export function SellPage() {
             setCategory(null)
             setAttributes({})
             setCommon(null)
+            setPhotos([])
+            setPhotosReady(false)
             setListingId(null)
           }}
         />
@@ -358,6 +372,7 @@ function ReviewStep({
   category,
   schema,
   common,
+  photos,
   attributes,
   submitting,
   error,
@@ -367,6 +382,7 @@ function ReviewStep({
   category: CategoryDto
   schema: CategorySchema | null
   common: CommonForm
+  photos: ProductPhoto[]
   attributes: Record<string, unknown>
   submitting: boolean
   error: string | null
@@ -403,6 +419,13 @@ function ReviewStep({
               <p className="text-sm leading-relaxed whitespace-pre-line">{common.description}</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ImagePlus className="w-4 h-4 text-primary" /> Product Photos</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2">{photos.map((photo, index) => <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg border"><img src={photo.url} alt={`Product photo ${index + 1}`} className="w-full h-full object-cover" />{index === 0 && <span className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Primary</span>}</div>)}</div>
         </CardContent>
       </Card>
 

@@ -28,3 +28,12 @@ export const recordView = asyncHandler(async (req: Request, res: Response) => {
 export const myListings = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: await listingService.getSellerListings((req as any).user.id) });
 });
+
+export const deleteListingImage = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ success: true, data: await listingService.deleteListingImage(req.params.id, req.params.imageId, (req as any).user.id) });
+});
+
+export const reorderListingImages = asyncHandler(async (req: Request, res: Response) => {
+  const ids = Array.isArray(req.body?.imageIds) ? req.body.imageIds : [];
+  res.json({ success: true, data: await listingService.reorderListingImages(req.params.id, ids, (req as any).user.id) });
+});

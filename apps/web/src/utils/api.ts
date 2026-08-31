@@ -13,7 +13,7 @@ export class ApiClientError extends Error {
   }
 }
 
-async function getAuthToken(): Promise<string | null> {
+export async function getAuthToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
 
   // Ask Clerk for a fresh token first, then use the cached session token.
@@ -35,7 +35,7 @@ async function getAuthToken(): Promise<string | null> {
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken();
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string>),
   };

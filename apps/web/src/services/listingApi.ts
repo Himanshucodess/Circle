@@ -1,4 +1,4 @@
-import { apiFetch } from "@/utils/api";
+import { apiFetch, getAuthToken } from "@/utils/api";
 import { ListingDto } from "@marketplace/shared";
 
 export async function fetchListings(limit?: number, options?: { search?: string; category?: string }): Promise<ListingDto[]> {
@@ -23,8 +23,41 @@ export interface CreateListingInput {
   price: number;
   condition: string;
   location: string;
-  images: { url: string; displayOrder: number }[];
+  images: { url: string; publicId?: string; uploadId?: string; displayOrder: number }[];
   attributes: Record<string, unknown>;
+}
+
+export interface UploadedImage {
+  id: string;
+  secureUrl: string;
+  publicId: string;
+}
+
+export async function uploadImage(file: File, onProgress?: (percent: number) => void): Promise<UploadedImage> {
+  const token = await getAuthToken();
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/uploads/images");
+    request.withCredentials = true;
+    if (token) request.setRequestHeader("Authorization", `Bearer ${token}`);
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onload = () => {
+      let body: any;
+      try { body = JSON.parse(request.responseText); } catch { body = null; }
+      if (request.status >= 200 && request.status < 300 && body?.data) return resolve(body.data);
+      reject(new Error(body?.error?.message || "Photo upload failed."));
+    };
+    request.onerror = () => reject(new Error("Photo upload failed."));
+    const form = new FormData();
+    form.append("image", file);
+    request.send(form);
+  });
+}
+
+export async function deleteUploadedImage(id: string) {
+  return apiFetch<{ removed: boolean }>(`/api/uploads/images/${id}`, { method: "DELETE" });
 }
 
 export async function createListing(input: CreateListingInput): Promise<ListingDto> {

@@ -26,6 +26,18 @@ The web app runs at `http://localhost:5173` and the API at `http://localhost:400
 
 Required environment values are documented in `.env.example`. `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` are server-only values and must never use a `VITE_` prefix.
 
+### Cloudinary photo uploads
+
+CircleStore stores seller photos in Cloudinary and stores only the secure URL, public ID, and display order in PostgreSQL.
+
+1. Create a Cloudinary account.
+2. Obtain the Cloud Name, API Key, and API Secret.
+3. Add them to the backend `.env` as `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`.
+4. Keep these values server-side; never prefix them with `VITE_` and never commit `.env`.
+5. Alternatively, set `CLOUDINARY_URL` in the backend environment.
+6. Start the application with the commands above.
+7. Open `/sell` and upload photos through the seller flow.
+
 ## Tests and builds
 
 ```bash

@@ -21,6 +21,12 @@ let fieldIdB: string;
 let publishedId: string;
 
 describe("Marketplace Dynamic Listing API", () => {
+  it("requires authentication for photo uploads", async () => {
+    const res = await request(app).post("/api/uploads/images");
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHORIZED");
+  });
+
   beforeAll(async () => {
     process.env.ADMIN_USERNAME = "admin1";
     process.env.ADMIN_PASSWORD = "CircleStore";
@@ -31,6 +37,22 @@ describe("Marketplace Dynamic Listing API", () => {
     sellerToken = signToken(seller);
     const login = await admin.post("/api/admin/auth/login").send({ username: "admin1", password: "CircleStore" });
     if (login.status !== 200) throw new Error("Admin test session could not be created");
+  });
+
+  it("rejects unsupported and oversized photo uploads before Cloudinary", async () => {
+    const unsupported = await request(app)
+      .post("/api/uploads/images")
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .attach("image", Buffer.from("not-an-image"), { filename: "photo.gif", contentType: "image/gif" });
+    expect(unsupported.status).toBe(400);
+    expect(unsupported.body.error.message).toMatch(/JPG, PNG, or WEBP/i);
+
+    const oversized = await request(app)
+      .post("/api/uploads/images")
+      .set("Authorization", `Bearer ${sellerToken}`)
+      .attach("image", Buffer.alloc(10 * 1024 * 1024 + 1), { filename: "photo.jpg", contentType: "image/jpeg" });
+    expect(oversized.status).toBe(400);
+    expect(oversized.body.error.message).toMatch(/smaller than 10 MB/i);
   });
 
   afterAll(async () => {
@@ -125,6 +147,21 @@ describe("Marketplace Dynamic Listing API", () => {
     });
     expect(res.status).toBe(201);
     expect(res.body.data.attributes[fieldKeyA]).toBe("hello");
+  });
+
+  it("does not accept a photo upload owned by another seller", async () => {
+    const res = await request(app).post("/api/listings").set("Authorization", `Bearer ${sellerToken}`).send({
+      categoryId: catId,
+      title: "Listing with foreign photo",
+      description: "A listing attempting to use another seller's uploaded photo",
+      price: 100,
+      condition: "USED",
+      location: "TestCity",
+      images: [{ url: "https://res.cloudinary.com/example/image/upload/sample.jpg", publicId: "foreign/photo", uploadId: "missing-upload" }],
+      attributes: { [fieldKeyA]: "hello", [fieldKeyB]: 42 },
+    });
+    expect(res.status).toBe(403);
+    expect(res.body.error.message).toMatch(/not owned/i);
   });
 
   it("rejects invalid listing (common validation)", async () => {

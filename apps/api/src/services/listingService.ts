@@ -5,12 +5,15 @@ import { ApiError } from "../utils/ApiError";
 import { validateAttributes } from "../utils/dynamicValidation";
 import { createListingSchema } from "../validators";
 import { SchemaField } from "@marketplace/shared";
+import * as imageUploadRepo from "../repositories/imageUploadRepository";
+import * as cloudinaryService from "./cloudinaryService";
 
 function toDto(listing: any) {
   const images = (listing.images ?? []).map((img: any) => ({
     id: img.id,
     url: img.url,
     displayOrder: img.displayOrder,
+    publicId: img.publicId,
   }));
   return {
     id: listing.id,
@@ -114,7 +117,21 @@ export async function createListing(body: unknown, sellerId?: string | null) {
     );
   }
 
-  const listing = await listingRepo.create({
+  const uploadedIds = (data.images ?? []).map((image) => image.uploadId).filter(Boolean) as string[];
+  if ((data.images ?? []).some((image) => image.publicId && !image.uploadId)) {
+    throw ApiError.badRequest("INVALID_IMAGE_UPLOAD", "Product photos must be uploaded through CircleStore.");
+  }
+  if (new Set(uploadedIds).size !== uploadedIds.length) {
+    throw ApiError.badRequest("DUPLICATE_IMAGE", "Each product photo can only be added once.");
+  }
+  const ownedUploads = await imageUploadRepo.findOwnedByIds(uploadedIds, sellerId || "");
+  if (ownedUploads.length !== uploadedIds.length || ownedUploads.some((upload) => !data.images?.some((image) => image.uploadId === upload.id && image.publicId === upload.publicId && image.url === upload.url))) {
+    throw ApiError.forbidden("One or more product photos are not owned by you.");
+  }
+
+  let listing;
+  try {
+    listing = await listingRepo.create({
     categoryId: category.id,
     schemaVersionId: latestSchema.id,
     sellerId: sellerId || null,
@@ -126,9 +143,20 @@ export async function createListing(body: unknown, sellerId?: string | null) {
     attributes: validation.sanitized,
     images: (data.images ?? []).map((img, i) => ({
       url: img.url,
+      publicId: img.publicId,
+      uploadId: img.uploadId,
       displayOrder: img.displayOrder ?? i,
     })),
-  });
+    }, sellerId || "", uploadedIds);
+  } catch (error) {
+    // The upload records remain available for a retry, but if creation failed after
+    // validation, remove the associated assets to avoid abandoned Cloudinary files.
+    for (const upload of ownedUploads) {
+      try { await cloudinaryService.deleteImage(upload.publicId); } catch {}
+    }
+    await imageUploadRepo.deleteMany(uploadedIds, sellerId || "").catch(() => {});
+    throw error;
+  }
 
   return toDto(listing);
 }
@@ -142,4 +170,27 @@ export async function recordView(id: string) {
 
 export async function getSellerListings(sellerId: string) {
   return (await listingRepo.listBySeller(sellerId)).map(toDto);
+}
+
+export async function deleteListingImage(listingId: string, imageId: string, sellerId: string) {
+  const image = await listingRepo.findImage(imageId);
+  if (!image || image.listingId !== listingId) throw ApiError.notFound("Listing image not found");
+  if (image.listing.sellerId !== sellerId) throw ApiError.forbidden("You cannot modify this listing");
+  if (image.publicId) {
+    try { await cloudinaryService.deleteImage(image.publicId); } catch (error) { console.warn("[listing] image cleanup failed", error); }
+  }
+  await listingRepo.deleteImage(imageId);
+  return { removed: true };
+}
+
+export async function reorderListingImages(listingId: string, imageIds: string[], sellerId: string) {
+  const listing = await listingRepo.findById(listingId);
+  if (!listing) throw ApiError.notFound("Listing not found");
+  if (listing.sellerId !== sellerId) throw ApiError.forbidden("You cannot modify this listing");
+  const currentIds = listing.images.map((image: any) => image.id);
+  if (currentIds.length !== imageIds.length || currentIds.some((id: string) => !imageIds.includes(id))) {
+    throw ApiError.badRequest("INVALID_IMAGE_ORDER", "Image order does not match this listing.");
+  }
+  await listingRepo.reorderImages(listingId, imageIds);
+  return (await listingRepo.findById(listingId))?.images ?? [];
 }

@@ -110,6 +110,7 @@ model User {
   listings Listing[]
   offers   Offer[]
   categoryRequests CategoryRequest[]
+  imageUploads ImageUpload[]
 }
 
 model CategoryRequest {
@@ -162,11 +163,25 @@ model ListingImage {
   id           String  @id @default(cuid())
   listingId    String
   url          String
+  publicId     String?
   displayOrder Int     @default(0)
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@index([listingId])
+}
+
+// Temporary ownership records make pre-publish Cloudinary cleanup safe.
+model ImageUpload {
+  id        String   @id @default(cuid())
+  ownerId   String
+  url       String
+  publicId  String   @unique
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
 }
 
 model Offer {

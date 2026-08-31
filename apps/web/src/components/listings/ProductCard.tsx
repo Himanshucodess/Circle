@@ -5,7 +5,7 @@ import { Badge, ConditionBadge } from "../ui/Badge"
 import { MapPin, Heart, Eye } from "lucide-react"
 
 export function ProductCard({ listing }: { listing: ListingDto }) {
-  const image = listing.images && listing.images.length > 0 ? listing.images[0].url : undefined
+  const image = listing.images && listing.images.length > 0 ? [...listing.images].sort((a, b) => a.displayOrder - b.displayOrder)[0].url : undefined
 
   return (
     <Link

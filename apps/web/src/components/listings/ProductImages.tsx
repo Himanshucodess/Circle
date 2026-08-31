@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ListingDto } from "@marketplace/shared";
+import { optimizedImageUrl } from "./ProductImage";
 
 interface ProductImagesProps {
   images: ListingDto["images"];
@@ -6,32 +9,26 @@ interface ProductImagesProps {
 }
 
 export function ProductImages({ images, alt }: ProductImagesProps) {
-  const urls = images && images.length > 0 ? images.map((i) => i.url) : [];
+  const ordered = [...(images ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
+  const [selected, setSelected] = useState(0);
+  const [failed, setFailed] = useState(false);
 
-  if (urls.length === 0) {
-    return (
-      <div className="h-72 md:h-96 rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-400">
-        <span className="text-5xl">🛍️</span>
-      </div>
-    );
+  if (ordered.length === 0 || failed) {
+    return <div className="h-72 md:h-96 rounded-xl bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center text-brand-400"><span className="text-5xl">🛍️</span></div>;
   }
 
-  const [main, ...rest] = urls;
-
+  const current = ordered[Math.min(selected, ordered.length - 1)];
+  const move = (direction: -1 | 1) => setSelected((index) => (index + direction + ordered.length) % ordered.length);
   return (
-    <div>
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <img src={main} alt={alt ?? "Product image"} className="w-full h-72 md:h-96 object-cover" />
+    <div className="p-2 sm:p-3">
+      <div className="relative overflow-hidden rounded-xl border bg-muted aspect-[4/3]">
+        <img src={optimizedImageUrl(current.url, 1400)} alt={alt ?? "Product image"} className="w-full h-full object-cover" onError={() => setFailed(true)} />
+        {ordered.length > 1 && <>
+          <button type="button" aria-label="Previous image" onClick={() => move(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white"><ChevronLeft className="w-5 h-5" /></button>
+          <button type="button" aria-label="Next image" onClick={() => move(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white"><ChevronRight className="w-5 h-5" /></button>
+        </>}
       </div>
-      {rest.length > 0 && (
-        <div className="flex gap-3 mt-3">
-          {urls.map((url, i) => (
-            <div key={i} className="w-20 h-20 overflow-hidden rounded-lg border border-gray-200">
-              <img src={url} alt="" className="w-full h-full object-cover" />
-            </div>
-          ))}
-        </div>
-      )}
+      {ordered.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto pb-1">{ordered.map((image, index) => <button type="button" key={image.id} aria-label={`Show image ${index + 1}`} onClick={() => { setSelected(index); setFailed(false); }} className={`w-16 h-16 shrink-0 overflow-hidden rounded-lg border-2 ${index === selected ? "border-primary" : "border-transparent"}`}><img src={optimizedImageUrl(image.url, 180)} alt="" className="w-full h-full object-cover" onError={(event) => { event.currentTarget.style.visibility = "hidden"; }} /></button>)}</div>}
     </div>
   );
 }

@@ -109,6 +109,8 @@ export const createListingSchema = z.object({
     .array(
       z.object({
         url: z.string().url(),
+        publicId: z.string().min(1).optional(),
+        uploadId: z.string().min(1).optional(),
         displayOrder: z.number().int().optional(),
       })
     )

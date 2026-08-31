@@ -10,11 +10,12 @@ export interface CreateListingInput {
   condition: string;
   location: string;
   attributes: Record<string, unknown>;
-  images: { url: string; displayOrder: number }[];
+  images: { url: string; publicId?: string; uploadId?: string; displayOrder: number }[];
 }
 
-export async function create(data: CreateListingInput) {
-  return prisma.listing.create({
+export async function create(data: CreateListingInput, ownerId: string, uploadIds: string[]) {
+  return prisma.$transaction(async (tx) => {
+    const listing = await tx.listing.create({
     data: {
       categoryId: data.categoryId,
       schemaVersionId: data.schemaVersionId,
@@ -28,6 +29,7 @@ export async function create(data: CreateListingInput) {
       images: {
         create: data.images.map((img, i) => ({
           url: img.url,
+          publicId: img.publicId,
           displayOrder: data.images[i]?.displayOrder ?? i,
         })),
       },
@@ -38,6 +40,9 @@ export async function create(data: CreateListingInput) {
       schema: { select: { version: true } },
       seller: { select: { id: true, name: true, avatar: true, createdAt: true } },
     },
+    });
+    if (uploadIds.length) await tx.imageUpload.deleteMany({ where: { id: { in: uploadIds }, ownerId } });
+    return listing;
   });
 }
 
@@ -118,4 +123,16 @@ export async function listBySeller(sellerId: string) {
       _count: { select: { offers: { where: { status: "PENDING" } } } },
     },
   });
+}
+
+export async function findImage(id: string) {
+  return prisma.listingImage.findUnique({ where: { id }, include: { listing: { select: { sellerId: true } } } });
+}
+
+export async function deleteImage(id: string) {
+  return prisma.listingImage.delete({ where: { id } });
+}
+
+export async function reorderImages(listingId: string, imageIds: string[]) {
+  await prisma.$transaction(imageIds.map((id, index) => prisma.listingImage.update({ where: { id }, data: { displayOrder: index } })));
 }

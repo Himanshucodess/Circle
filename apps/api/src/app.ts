@@ -12,6 +12,7 @@ import listingsRouter from "./routes/listings";
 import authRouter from "./routes/auth";
 import adminAuthRouter from "./routes/adminAuth";
 import categoryRequestsRouter from "./routes/categoryRequests";
+import uploadsRouter from "./routes/uploads";
 
 export function createApp() {
   const app = express();
@@ -84,6 +85,7 @@ export function createApp() {
   app.use("/api/admin/auth", adminAuthRouter);
   app.use("/api/categories", publicCategoriesRouter);
   app.use("/api/listings", listingsRouter);
+  app.use("/api/uploads", uploadsRouter);
   app.use("/api/category-requests", categoryRequestsRouter);
 
   // Admin

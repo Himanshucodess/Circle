@@ -116,7 +116,7 @@ export interface ListingDto {
     icon?: string | null;
   };
   schemaVersion: number | null;
-  images: { id: string; url: string; displayOrder: number }[];
+  images: { id: string; url: string; publicId?: string | null; displayOrder: number }[];
   createdAt: string;
   pricingInsight?: PricingInsightDto;
   seller?: { id: string; name?: string | null; avatar?: string | null; memberSince?: string } | null;

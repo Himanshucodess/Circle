@@ -13,5 +13,7 @@ router.get("/:id", c.getListing);
 router.get("/:id/offer-competitiveness", o.competitiveness);
 router.get("/:id/offers", authenticateRequired as any, o.listOffers);
 router.post("/:id/offers", authenticateRequired as any, o.createOffer);
+router.delete("/:id/images/:imageId", authenticateRequired as any, c.deleteListingImage);
+router.patch("/:id/images/order", authenticateRequired as any, c.reorderListingImages);
 
 export default router;
