@@ -9,7 +9,7 @@ export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
   if (!file) throw ApiError.badRequest("IMAGE_REQUIRED", "Please select an image to upload.");
   const uploaded = await cloudinaryService.uploadImage(file.buffer, file.originalname);
   try {
-    const record = await imageUploadRepo.create({ ownerId: (req as any).user.id, ...uploaded, url: uploaded.secureUrl });
+    const record = await imageUploadRepo.create({ ownerId: (req as any).user.id, url: uploaded.secureUrl, publicId: uploaded.publicId });
     res.status(201).json({ success: true, data: { id: record.id, secureUrl: record.url, publicId: record.publicId } });
   } catch (error) {
     try { await cloudinaryService.deleteImage(uploaded.publicId); } catch {}
