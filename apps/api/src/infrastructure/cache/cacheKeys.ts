@@ -20,4 +20,5 @@ export const cachePatterns = {
   categorySchemas: (categoryId: string) => `category:schema:${categoryId}:*`,
   latestListings: () => "listings:latest*",
   categoryListings: () => "listings:category:*",
+  listingDetails: () => "listing:*",
 };
