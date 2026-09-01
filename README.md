@@ -10,7 +10,7 @@ Admin Panel: https://circle.lightchan.online/admin/login
 
 ## Source Code
 
-https://github.com/Himanshucodess/Circlen
+https://github.com/Himanshucodess/Circle
 
 ## Setup
 
