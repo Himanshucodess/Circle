@@ -1,110 +1,21 @@
 # CircleStore
 
-CircleStore is a schema-driven secondhand marketplace. Sellers choose from published categories and receive a form generated from that category's published schema. Administrators manage the taxonomy, fields, schema versions, and seller category requests without changing seller-flow code.
+CircleStore is a schema-driven second-hand marketplace designed to support dynamic product categories and category-specific listing fields without requiring category-specific frontend forms. The core architecture stores categories, field definitions, validation rules, options, and schema versions as configurable data in PostgreSQL. When a seller selects a category, the frontend fetches its active schema through the API and dynamically renders the appropriate form fields, allowing administrators to introduce new categories and fields without rewriting the seller flow. Sellers can browse categories, create listings, upload product images, manage their listings, make and receive offers, and request new categories when a required category is unavailable. Administrators can manage categories, configure reusable fields, publish schemas, and review seller category requests. The backend is built with Node.js, Express.js, TypeScript, Prisma, and follows a clean layered architecture using routes, controllers, services, and repositories. PostgreSQL is used as the persistent source of truth, while Redis provides cache-aside caching for frequently accessed categories, schemas, listings, and pricing insights with TTL-based expiration and cache invalidation. Redis is designed to fail open so the application can fall back to PostgreSQL if the cache becomes unavailable. Clerk is used for authentication, Cloudinary for product image storage, and Zod for frontend and backend validation. The frontend is built with React, Vite, TypeScript, React Hook Form, shadcn/ui, and React Router. The complete application is containerized using Docker and Docker Compose and deployed on an Ubuntu AWS EC2 instance, with Caddy acting as the reverse proxy and HTTPS layer. The marketplace also includes Product Detail Pages, marketplace activity such as views and active offers, offer competitiveness feedback, pricing insights, category requests, and listing management. The main design goal is extensibility: adding a new category such as a bicycle, camera, furniture item, or any other product should primarily require configuration through the category and field management system rather than new hard-coded frontend forms.
 
-## Stack
+## Demo
 
-- React, Vite, TypeScript, React Hook Form, Zod
-- Express, TypeScript, Prisma, PostgreSQL
-- Clerk for marketplace users
-- Docker Compose, Redis caching, and Caddy for production
+Live Demo: https://circle.lightchan.online/
 
-## Local setup
+Admin Panel: https://circle.lightchan.online/admin/login
 
-```bash
-git clone <repository-url>
-cd CircleStore
-cp .env.example .env
-npm install
-docker compose up -d
-npx prisma migrate deploy
-npx prisma db seed
-npm run dev
-```
+## Source Code
 
-The web app runs at `http://localhost:5173` and the API at `http://localhost:4000`. The seeded marketplace includes Mobile Phone, Laptop, Sofa, and Bicycle categories with published schemas and listings.
+https://github.com/Himanshucodess/Circlen
 
-Required environment values are documented in `.env.example`. `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` are server-only values and must never use a `VITE_` prefix.
+## Setup
 
-### Cloudinary photo uploads
+Clone the repository, install dependencies, configure the required environment variables using `.env.example`, start the Docker Compose services, run the Prisma migrations, seed the database, and start the development server. The project includes sample categories, fields, listings, offers, and category requests for testing the complete marketplace workflow.
 
-CircleStore stores seller photos in Cloudinary and stores only the secure URL, public ID, and display order in PostgreSQL.
+## Tech Stack
 
-1. Create a Cloudinary account.
-2. Obtain the Cloud Name, API Key, and API Secret.
-3. Add them to the backend `.env` as `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`.
-4. Keep these values server-side; never prefix them with `VITE_` and never commit `.env`.
-5. Alternatively, set `CLOUDINARY_URL` in the backend environment.
-6. Start the application with the commands above.
-7. Open `/sell` and upload photos through the seller flow.
-
-### Redis caching
-
-Redis is a cache-aside performance layer. PostgreSQL remains the persistent source of truth; Redis caches frequently requested public data such as active categories, published category schemas, listing feeds, and listing details. Cloudinary remains responsible for image storage.
-
-The API connects to Redis through the Docker service name `redis` using `REDIS_URL="redis://redis:6379"`. Redis uses a Docker volume for reasonable restart persistence, but cached data is disposable. If Redis is unavailable, cache reads and writes fail open and the API continues querying PostgreSQL.
-
-Cache TTLs are centralized: categories and schemas are cached for 10 minutes, listing feeds and listing details for 60 seconds, pricing insights for 5 minutes when used, and short-lived aggregate offer calculations for 30 seconds when used. Category/schema administration and listing/offer mutations invalidate the relevant caches.
-
-Redis setup:
-
-```bash
-docker compose up -d
-docker compose exec redis redis-cli ping
-```
-
-The expected response is `PONG`. When running the API directly on the host instead of inside Compose, use a host-reachable Redis URL such as `redis://localhost:6379`; the API container must use `redis://redis:6379`.
-
-## Tests and builds
-
-```bash
-npm test
-npm run build
-```
-
-## Main journeys
-
-- Browse and search: `/`
-- Sell with a dynamic category form: `/sell`
-- Product detail, views, pricing insight, and private offers: `/products/:id`
-- Admin login: `/admin/login`
-- Admin dashboard: `/admin`
-- Category requests: `/admin/requests`
-
-The default local admin credentials are `admin1` / `CircleStore`; change them before sharing a deployment.
-
-## Extensibility
-
-To add a category, an administrator creates it, attaches reusable field definitions, configures validation and conditional rules, previews the shared dynamic renderer, and publishes a schema. Publishing creates an immutable schema version. Listings retain their `schemaVersionId`, so old listings continue rendering with the schema they were created against.
-
-Sellers may request a category from `/sell`. Requests are reviewed at `/admin/requests`; approval creates a draft category that remains unavailable until its fields and schema are published.
-
-## Production deployment
-
-Production uses `docker-compose.prod.yml` with PostgreSQL, Redis, API, web, and Caddy. Caddy serves `circle.lightchan.online`, proxies `/api/*` to the API container, and serves the web container for all other paths. Containers communicate through Compose service names; the API uses `db` and `redis`, never `localhost`.
-
-```text
-                         INTERNET
-                            |
-                            v
-                       CUSTOM DOMAIN
-                            |
-                            v
-                         CADDY
-                       HTTPS/Proxy
-                            |
-                     +------+------+
-                     |             |
-                     v             v
-                   WEB            API
-                                  |
-                         +--------+--------+
-                         |                 |
-                         v                 v
-                       REDIS           POSTGRES
-                       CACHE          SOURCE OF TRUTH
-                         |
-                    Cache-aside layer
-```
-
-Pushes to `master` run the GitHub Actions workflow. A successful CI build automatically archives tracked source to the EC2 deployment directory, rebuilds the Compose stack, applies Prisma migrations, and checks the public health endpoint. Secrets and `.env` files are excluded from Git.
+React, Vite, TypeScript, React Hook Form, shadcn/ui, Zod, Node.js, Express.js, Prisma, PostgreSQL, Redis, ioredis, Clerk, Cloudinary, Docker, Docker Compose, Caddy, AWS EC2, Ubuntu, Git and GitHub.
