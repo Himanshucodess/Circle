@@ -3,8 +3,8 @@
 **A schema-driven second-hand marketplace** — built so new product categories (Bicycle, Camera, Furniture, etc.) can be added through configuration alone, without writing a new form or backend model for every category.
 
 **Live Demo:** https://circle.lightchan.online/
-**Admin Panel:** https://circle.lightchan.online/admin/login (`admin1` / `CircleStore`)
-**Source Code:** https://github.com/Himanshucodess/Circlen
+**Admin Panel:** https://circle.lightchan.online/admin/login 
+**Source Code:** https://github.com/Himanshucodess/Circle
 
 ---
 
@@ -70,7 +70,7 @@ docker compose version
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Himanshucodess/Circlen.git
+git clone https://github.com/Himanshucodess/Circle.git
 cd Circlen
 ```
 
