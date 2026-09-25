@@ -91,17 +91,26 @@ jobs:
         run: |
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-          if [ -n "$EC2_SSH_KEY_B64" ]; then
-            printf '%s' "$EC2_SSH_KEY_B64" | base64 --decode > "$HOME/.ssh/circlestore.pem"
-          else
+          if [ -n "${EC2_SSH_KEY_B64:-}" ]; then
+            echo "Using EC2_SSH_KEY_B64 secret"
+            printf '%s' "$EC2_SSH_KEY_B64" | base64 --decode > "$HOME/.ssh/circlestore.pem" || { echo "ERROR: EC2_SSH_KEY_B64 is not valid base64. Re-encode the .pem with: base64 -w0 key.pem"; exit 1; }
+          elif [ -n "${EC2_SSH_KEY:-}" ]; then
+            echo "Using EC2_SSH_KEY secret"
             key="${EC2_SSH_KEY//$'\r'/}"
             key="${key//\\n/$'\n'}"
             printf '%s\n' "$key" > "$HOME/.ssh/circlestore.pem"
+          else
+            echo "ERROR: Neither EC2_SSH_KEY nor EC2_SSH_KEY_B64 secret is set (both empty). Add one under Settings -> Secrets and variables -> Actions."
+            exit 1
           fi
           chmod 600 "$HOME/.ssh/circlestore.pem"
-          test -s "$HOME/.ssh/circlestore.pem"
-          ssh-keygen -y -f "$HOME/.ssh/circlestore.pem" > /dev/null
-          ssh-keyscan -H "$DEPLOY_HOST" >> "$HOME/.ssh/known_hosts"
+          echo "Key file: $(wc -l < "$HOME/.ssh/circlestore.pem") lines, $(wc -c < "$HOME/.ssh/circlestore.pem") bytes (contents never printed)"
+          head -1 "$HOME/.ssh/circlestore.pem" | grep -q "PRIVATE KEY" || { echo "ERROR: key file does not start with a PRIVATE KEY header - the secret is malformed or truncated"; exit 1; }
+          ssh-keygen -y -f "$HOME/.ssh/circlestore.pem" > /dev/null || { echo "ERROR: ssh-keygen could not parse the key - not a valid PEM private key"; exit 1; }
+          echo "SSH key OK"
+          if [ -z "${DEPLOY_HOST:-}" ]; then echo "ERROR: EC2_HOST secret is empty"; exit 1; fi
+          echo "Scanning host keys for ${DEPLOY_HOST} ..."
+          ssh-keyscan -H "$DEPLOY_HOST" >> "$HOME/.ssh/known_hosts" || { echo "ERROR: ssh-keyscan failed for ${DEPLOY_HOST} - host unreachable or port 22 blocked"; exit 1; }
 
       - name: Check remote Docker
         run: >-
