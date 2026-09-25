@@ -122,7 +122,7 @@ jobs:
         shell: bash
         run: |
           ssh -i "$HOME/.ssh/circlestore.pem" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "mkdir -p '$DEPLOY_PATH'"
+            "mkdir -p '$DEPLOY_PATH' && sudo chown -R $DEPLOY_USER:$DEPLOY_USER '$DEPLOY_PATH'"
           git archive --format=tar.gz HEAD | ssh -i "$HOME/.ssh/circlestore.pem" \
             "$DEPLOY_USER@$DEPLOY_HOST" "tar -xzf - -C '$DEPLOY_PATH'"
 
