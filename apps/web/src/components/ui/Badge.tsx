@@ -3,19 +3,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-tight transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        brand: "border-transparent bg-brand-100 text-brand-700",
-        neutral: "border-transparent bg-gray-100 text-gray-700",
-        green: "border-transparent bg-emerald-100 text-emerald-700",
-        amber: "border-transparent bg-amber-100 text-amber-700",
-        red: "border-transparent bg-red-100 text-red-700",
+        default: "border-transparent bg-primary text-white",
+        secondary: "border-border/70 bg-secondary text-secondary-foreground",
+        destructive: "border-transparent bg-destructive text-destructive-foreground",
+        outline: "text-foreground border-border",
+        brand: "border-transparent bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-200",
+        neutral: "border-transparent bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-zinc-200",
+        green: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200",
+        amber: "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200",
+        red: "border-transparent bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200",
+        glass: "border-white/25 bg-white/15 text-white backdrop-blur-md",
+        lime: "border-transparent bg-lime text-ink-950",
       },
     },
     defaultVariants: {
@@ -25,7 +27,7 @@ const badgeVariants = cva(
 )
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
-  tone?: "brand" | "neutral" | "green" | "amber" | "red" | "default" | "secondary" | "destructive"
+  tone?: "brand" | "neutral" | "green" | "amber" | "red" | "default" | "secondary" | "destructive" | "glass" | "lime"
 }
 
 export function Badge({ className, variant, tone, ...props }: BadgeProps) {

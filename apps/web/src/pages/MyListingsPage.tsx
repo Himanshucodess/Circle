@@ -70,14 +70,14 @@ export function MyListingsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-12">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-semibold text-primary">Seller space</p>
-          <h1 className="text-3xl font-display font-bold tracking-tight mt-1">My Listings</h1>
-          <p className="text-muted-foreground mt-2">Manage the products you have shared with CircleStore.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Seller space</p>
+          <h1 className="mt-1 font-display text-4xl font-bold tracking-tight">My <span className="font-serif font-normal italic">listings</span></h1>
+          <p className="mt-2 text-muted-foreground">Manage the products you have shared with CircleStore.</p>
         </div>
-        <Link to="/sell"><Button className="rounded-full"><Plus className="w-4 h-4" /> Sell another item</Button></Link>
+        <Link to="/sell"><Button size="lg" className="rounded-2xl"><Plus className="h-4 w-4" /> Sell another item</Button></Link>
       </div>
 
       {error && <div className="mb-6"><ErrorState message={error} onRetry={() => void load()} /></div>}
@@ -90,7 +90,7 @@ export function MyListingsPage() {
             const primary = [...(listing.images ?? [])].sort((a, b) => a.displayOrder - b.displayOrder)[0]?.url;
             const removing = removingId === listing.id;
             return (
-              <Card key={listing.id} className="overflow-hidden">
+              <Card key={listing.id} className="card-hover overflow-hidden rounded-3xl">
                 <Link to={`/products/${listing.id}`} className="block aspect-[4/3] bg-muted">
                   <ProductImage src={primary} alt={listing.title} className="w-full h-full" />
                 </Link>

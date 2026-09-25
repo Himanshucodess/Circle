@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { useCategories } from "@/hooks/useCategories"
 import { useCategorySchema } from "@/hooks/useCategorySchema"
@@ -20,6 +21,8 @@ import { useUnifiedAuth } from "@/hooks/useUnifiedAuth"
 import { CategoryDto, CategorySchema } from "@marketplace/shared"
 import { formatAttributeValue } from "@/utils/formatValue"
 import { ArrowLeft, ArrowRight, Check, Sparkles, Package, FileText, Layers, Eye, PartyPopper, ShieldCheck, ImagePlus } from "lucide-react"
+import { Reveal } from "@/components/motion/Reveal"
+import { cn } from "@/lib/utils"
 
 type Step = "category" | "common" | "photos" | "category-info" | "review" | "success"
 
@@ -130,10 +133,14 @@ export function SellPage() {
     const pct = ((current + 1) / steps.length) * 100
     return (
       <div className="mb-8">
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-primary transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+          <span>Step {current + 1} of {steps.length}</span>
+          <span>{Math.round(pct)}% complete</span>
         </div>
-        <ol className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-violet-500 via-indigo-500 to-lime" animate={{ width: `${pct}%` }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} />
+        </div>
+        <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {steps.map((s, i) => {
             const active = i === current
             const done = i < current
@@ -141,16 +148,17 @@ export function SellPage() {
             return (
               <li
                 key={s.key}
-                className={`flex items-center gap-2.5 rounded-xl border p-2.5 transition-colors ${
-                  active ? "bg-primary text-primary-foreground border-primary shadow-sm" : done ? "bg-primary/10 border-primary/20 text-primary" : "bg-card text-muted-foreground"
-                }`}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-2xl border p-2.5 transition-all",
+                  active ? "border-ink-950 bg-ink-950 text-white shadow-card dark:border-white dark:bg-white dark:text-ink-950" : done ? "border-primary/30 bg-primary/10 text-primary" : "bg-card text-muted-foreground"
+                )}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-white/20" : done ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                  {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                <div className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-xl", active ? "bg-white/20 dark:bg-ink-950/10" : done ? "bg-primary text-white" : "bg-muted")}>
+                  {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                 </div>
-                <div className="hidden sm:block min-w-0">
-                  <div className={`text-xs font-semibold leading-none ${active ? "text-white" : done ? "text-primary" : ""}`}>{s.label}</div>
-                  <div className={`text-[11px] ${active ? "text-white/80" : "text-muted-foreground"}`}>{s.desc}</div>
+                <div className="hidden min-w-0 sm:block">
+                  <div className="text-xs font-bold leading-none">{s.label}</div>
+                  <div className={cn("mt-0.5 text-[11px]", active ? "opacity-70" : "text-muted-foreground")}>{s.desc}</div>
                 </div>
               </li>
             )
@@ -160,65 +168,82 @@ export function SellPage() {
     )
   }
 
-  if (loading) return <div className="max-w-3xl mx-auto px-4 py-10"><PageLoader label="Loading categories..." /></div>
-  if (error) return <div className="max-w-3xl mx-auto px-4 py-10"><ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} /></div>
+  if (loading) return <div className="mx-auto max-w-3xl px-4 py-10"><PageLoader label="Loading categories..." /></div>
+  if (error) return <div className="mx-auto max-w-3xl px-4 py-10"><ErrorState message="Something went wrong. Please try again." onRetry={() => window.location.reload()} /></div>
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      {/* sell hero strip */}
+      {step === "category" && (
+        <div className="relative mb-8 overflow-hidden rounded-[28px] bg-ink-950 p-7 text-white md:p-9">
+          <div className="pointer-events-none absolute inset-0" aria-hidden>
+            <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-violet-600/40 blur-[80px] animate-aurora" />
+            <div className="absolute -bottom-20 left-1/4 h-48 w-48 rounded-full bg-lime/15 blur-[80px]" />
+          </div>
+          <div className="relative">
+            <Badge variant="glass"><Sparkles className="h-3 w-3" /> List in under 2 minutes</Badge>
+            <h1 className="mt-3 font-display text-3xl font-bold tracking-tight md:text-4xl">
+              What are you <span className="font-serif font-normal italic text-lime">selling?</span>
+            </h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/65">Pick a category and get a smart form tailored to your item — specs, photos, done.</p>
+          </div>
+        </div>
+      )}
+
       {renderStepper()}
 
       {step === "category" && (
         <section>
-          <div className="mb-6">
-            <Badge variant="secondary" className="mb-3 gap-1"><Sparkles className="w-3 h-3" /> Step 1 of 4</Badge>
-            <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">What are you selling?</h1>
-            <p className="text-muted-foreground mt-1">Choose a category to get a smart form tailored to your item.</p>
-          </div>
-
           {categories.length === 0 ? (
             <EmptyState icon="📦" title="No categories available right now" description="Please try again shortly." />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {categories.map((c) => (
-                <button
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {categories.map((c, i) => (
+                <motion.button
                   key={c.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.05, 0.3), duration: 0.5 }}
                   onClick={() => selectCategory(c)}
-                  className="group text-left rounded-2xl border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-start gap-4"
+                  className="group rounded-3xl border bg-card p-5 text-left shadow-card transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-pop"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-muted group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center text-2xl shrink-0 transition-colors">
-                    {c.icon}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold group-hover:text-primary transition-colors flex items-center gap-2">
-                      {c.name} <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-0.5 transition-all" />
+                  <div className="flex items-start gap-4">
+                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 text-2xl transition-all group-hover:from-violet-500 group-hover:to-indigo-500">
+                      {c.icon}
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{c.description}</div>
-                    <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Ready to list
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 font-display font-semibold transition-colors group-hover:text-primary">
+                        {c.name} <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      </div>
+                      <div className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{c.description}</div>
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ready to list
+                      </div>
                     </div>
                   </div>
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
-          <div className="mt-6 rounded-2xl border bg-card p-5">
-            <h2 className="font-semibold">Can't find what you're selling?</h2>
-            <p className="text-sm text-muted-foreground mt-1">Request a category and our team will review it.</p>
-            {requestMessage && <p className="text-sm text-emerald-600 mt-3">{requestMessage}</p>}
-            {!requestOpen ? <Button variant="outline" className="mt-4 rounded-full" onClick={() => setRequestOpen(true)}>Request a category</Button> : <form onSubmit={submitCategoryRequest} className="mt-4 space-y-3"><Input label="Category name" value={requestForm.name} onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })} required /><Textarea label="Description" value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} required /><Textarea label="Why do you need this category?" value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} required /><Input label="Example products (optional)" value={requestForm.exampleProducts} onChange={(e) => setRequestForm({ ...requestForm, exampleProducts: e.target.value })} />{requestError && <p className="text-sm text-destructive">{requestError}</p>}<div className="flex gap-2"><Button type="submit" loading={requestSubmitting} className="rounded-full">Request category</Button><Button type="button" variant="ghost" onClick={() => setRequestOpen(false)}>Cancel</Button></div></form>}
-          </div>
+          <Reveal className="mt-6 rounded-3xl border bg-card p-6 shadow-card">
+            <h2 className="font-display font-bold">Can't find what you're selling?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Request a category and our team will review it.</p>
+            {requestMessage && <p className="mt-3 text-sm font-medium text-emerald-600">{requestMessage}</p>}
+            {!requestOpen ? <Button variant="outline" className="mt-4 rounded-2xl" onClick={() => setRequestOpen(true)}>Request a category</Button> : <form onSubmit={submitCategoryRequest} className="mt-4 space-y-3"><Input label="Category name" value={requestForm.name} onChange={(e) => setRequestForm({ ...requestForm, name: e.target.value })} required /><Textarea label="Description" value={requestForm.description} onChange={(e) => setRequestForm({ ...requestForm, description: e.target.value })} required /><Textarea label="Why do you need this category?" value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} required /><Input label="Example products (optional)" value={requestForm.exampleProducts} onChange={(e) => setRequestForm({ ...requestForm, exampleProducts: e.target.value })} />{requestError && <p className="text-sm font-medium text-destructive">{requestError}</p>}<div className="flex gap-2"><Button type="submit" loading={requestSubmitting} className="rounded-2xl">Request category</Button><Button type="button" variant="ghost" onClick={() => setRequestOpen(false)}>Cancel</Button></div></form>}
+          </Reveal>
         </section>
       )}
 
       {step === "common" && (
         <section>
           <Button variant="ghost" size="sm" onClick={() => setStep("category")} className="mb-4 -ml-2">
-            <ArrowLeft className="w-4 h-4" /> Back to categories
+            <ArrowLeft className="h-4 w-4" /> Back to categories
           </Button>
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-violet-500 to-indigo-400" />
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /> Basic information</CardTitle>
-              <CardDescription>These details are shared across all categories and appear on the marketplace card.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Basic information</CardTitle>
+              <CardDescription>Shared across all categories — this is what buyers see first.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={commonForm.handleSubmit(onCommonSubmit)} className="space-y-5">
@@ -235,14 +260,14 @@ export function SellPage() {
                 <Textarea
                   label="Description"
                   id="description"
-                  placeholder="Describe condition, reason for selling, defects, accessories included…"
+                  placeholder="Condition, reason for selling, defects, accessories included…"
                   error={commonForm.formState.errors.description?.message}
                   {...commonForm.register("description", {
                     required: "Description is required",
                     minLength: { value: 10, message: "Description must be at least 10 characters" },
                   })}
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Input
                     label="Price (₹)"
                     id="price"
@@ -277,8 +302,8 @@ export function SellPage() {
                   {...commonForm.register("location", { required: "Location is required" })}
                 />
                 <div className="flex justify-end pt-2">
-                  <Button type="submit" className="rounded-full px-6">
-                    Continue <ArrowRight className="w-4 h-4" />
+                  <Button type="submit" size="lg" className="rounded-2xl px-7">
+                    Continue <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -290,13 +315,13 @@ export function SellPage() {
       {step === "photos" && (
         <section>
           <Button variant="ghost" size="sm" onClick={() => setStep("common")} className="mb-4 -ml-2" disabled={photosUploading}>
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <ProductPhotoUploader value={photos} onChange={setPhotos} onUploadingChange={setPhotosUploading} onReadyChange={setPhotosReady} />
-          <div className="flex items-center justify-between mt-4">
+          <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">At least one clear photo is required.</p>
-            <Button className="rounded-full px-6" disabled={!photosReady || photosUploading} onClick={() => setStep("category-info")}>
-              Continue <ArrowRight className="w-4 h-4" />
+            <Button size="lg" className="rounded-2xl px-7" disabled={!photosReady || photosUploading} onClick={() => setStep("category-info")}>
+              Continue <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </section>
@@ -305,15 +330,16 @@ export function SellPage() {
       {step === "category-info" && category && (
         <section>
           <Button variant="ghost" size="sm" onClick={() => setStep("photos")} className="mb-4 -ml-2">
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> Back
           </Button>
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-lime to-emerald-300" />
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl">{category.icon}</div>
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-xl text-primary">{category.icon}</div>
                 <div>
                   <CardTitle>Tell us more about your {category.name}</CardTitle>
-                  <CardDescription>Fields below are dynamically generated from the published schema.</CardDescription>
+                  <CardDescription>Auto-generated from the published schema — no code needed.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -392,40 +418,40 @@ function ReviewStep({
   const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="flex items-start justify-between gap-6 py-2.5">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-right">{value}</span>
+      <span className="text-right text-sm font-semibold">{value}</span>
     </div>
   )
 
   return (
     <section>
       <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-4">
-        <ArrowLeft className="w-4 h-4" /> Back
+        <ArrowLeft className="h-4 w-4" /> Back
       </Button>
-      <h1 className="text-2xl font-display font-bold tracking-tight">Review your listing</h1>
-      <p className="text-muted-foreground mb-6">Make sure everything looks right before publishing.</p>
+      <h1 className="font-display text-3xl font-bold tracking-tight">Review your <span className="font-serif font-normal italic">listing</span></h1>
+      <p className="mb-6 mt-1 text-muted-foreground">Make sure everything looks right before publishing.</p>
 
       <Card className="mb-4">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> Basic information</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-primary" /> Basic information</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="divide-y">
+          <div className="divide-y divide-dashed">
             <Row label="Title" value={common.title} />
             <Row label="Price" value={`₹${Number(common.price).toLocaleString()}`} />
             <Row label="Condition" value={<Badge variant="secondary">{common.condition.replace(/_/g, " ")}</Badge>} />
             <Row label="Location" value={common.location} />
             <div className="py-3">
-              <span className="text-sm text-muted-foreground block mb-1">Description</span>
-              <p className="text-sm leading-relaxed whitespace-pre-line">{common.description}</p>
+              <span className="mb-1 block text-sm text-muted-foreground">Description</span>
+              <p className="whitespace-pre-line text-sm leading-relaxed">{common.description}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Card className="mb-4">
-        <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ImagePlus className="w-4 h-4 text-primary" /> Product Photos</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><ImagePlus className="h-4 w-4 text-primary" /> Photos</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-2">{photos.map((photo, index) => <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg border"><img src={photo.url} alt={`Product photo ${index + 1}`} className="w-full h-full object-cover" />{index === 0 && <span className="absolute bottom-1 left-1 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Primary</span>}</div>)}</div>
+          <div className="grid grid-cols-4 gap-2">{photos.map((photo, index) => <div key={photo.id} className="relative aspect-square overflow-hidden rounded-2xl border"><img src={photo.url} alt={`Product photo ${index + 1}`} className="h-full w-full object-cover" />{index === 0 && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold">Primary</span>}</div>)}</div>
         </CardContent>
       </Card>
 
@@ -436,7 +462,7 @@ function ReviewStep({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="divide-y">
+          <div className="divide-y divide-dashed">
             {(schema?.fields ?? []).map((field) => {
               const val = attributes[field.key]
               if (val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0)) return null
@@ -446,14 +472,14 @@ function ReviewStep({
         </CardContent>
       </Card>
 
-      {error && <div className="mb-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3">{error}</div>}
+      {error && <div className="mb-4 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={onBack} disabled={submitting} className="rounded-full">
+        <Button variant="outline" onClick={onBack} disabled={submitting} className="rounded-2xl">
           Back
         </Button>
-        <Button onClick={onPublish} loading={submitting} className="rounded-full px-6 shadow-md">
-          {submitting ? "Publishing..." : "Publish Listing"} {!submitting && <Sparkles className="w-4 h-4" />}
+        <Button onClick={onPublish} loading={submitting} size="lg" className="rounded-2xl px-7 shadow-glow">
+          {submitting ? "Publishing..." : "Publish listing"} {!submitting && <Sparkles className="h-4 w-4" />}
         </Button>
       </div>
     </section>
@@ -468,28 +494,33 @@ function SuccessStep({
   onSellAnother: () => void
 }) {
   return (
-    <Card className="text-center py-10 px-6 border-0 shadow-lg bg-gradient-to-b from-emerald-50 to-white">
-      <div className="mx-auto w-20 h-20 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg mb-6">
-        <PartyPopper className="w-10 h-10" />
+    <Card className="overflow-hidden border-0 bg-ink-950 px-6 py-12 text-center text-white shadow-pop">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute -top-20 left-1/2 h-56 w-96 -translate-x-1/2 rounded-full bg-violet-600/40 blur-[90px]" />
       </div>
-      <h1 className="text-3xl font-display font-bold">Listing Published!</h1>
-      <p className="text-muted-foreground mt-2 max-w-md mx-auto">Your product is now live on the marketplace and visible to buyers.</p>
-      <div className="mt-3 inline-flex items-center gap-2 text-xs bg-emerald-100 text-emerald-700 rounded-full px-3 py-1">
-        <ShieldCheck className="w-3.5 h-3.5" /> Protected by buyer protection
-      </div>
-      {listingId && (
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
-          <Link to={`/products/${listingId}`} className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:bg-primary/90 shadow">
-            View Listing
-          </Link>
-          <Link to="/" className="inline-flex items-center justify-center rounded-full border bg-background px-6 py-2.5 text-sm font-medium hover:bg-accent">
-            Back to Marketplace
-          </Link>
-          <button className="text-sm text-muted-foreground hover:text-foreground px-4 py-2" onClick={onSellAnother}>
-            Sell Another Item
-          </button>
+      <div className="relative">
+        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full bg-emerald-400 text-ink-950 shadow-glow">
+          <PartyPopper className="h-10 w-10" />
         </div>
-      )}
+        <h1 className="font-display text-4xl font-bold tracking-tight">Listing <span className="font-serif font-normal italic text-lime">live!</span></h1>
+        <p className="mx-auto mt-2 max-w-md text-white/60">Your product is now on the marketplace and visible to buyers.</p>
+        <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Protected by buyer protection
+        </div>
+        {listingId && (
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to={`/products/${listingId}`} className="inline-flex h-12 items-center justify-center rounded-2xl bg-lime px-6 text-sm font-bold text-ink-950 transition-transform hover:scale-[1.03]">
+              View listing
+            </Link>
+            <Link to="/" className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 text-sm font-semibold hover:bg-white/20">
+              Back to marketplace
+            </Link>
+            <button className="px-4 py-2 text-sm text-white/60 hover:text-white" onClick={onSellAnother}>
+              Sell another item
+            </button>
+          </div>
+        )}
+      </div>
     </Card>
   )
 }
